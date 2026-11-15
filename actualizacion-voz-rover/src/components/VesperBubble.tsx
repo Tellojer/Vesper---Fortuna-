@@ -62,6 +62,11 @@ export function VesperBubble() {
   const openRef = useRef(false);
   const rec = useRef<Recognition | null>(null);
   const slots = useRef<{ when?: When; zone?: Zone }>({});
+  // Hands-free turn taking: what is being spoken, the watcher that reopens the
+  // microphone when it ends, and how many silent attempts are left
+  const speaking = useRef<SpeechSynthesisUtterance | null>(null);
+  const afterSpeech = useRef(0);
+  const silentRetries = useRef(0);
 
   const stopListening = () => {
     rec.current?.abort();
@@ -69,14 +74,20 @@ export function VesperBubble() {
     setListening(false);
   };
 
-  const listen = () => {
+  const stopSpeaking = () => {
+    window.clearInterval(afterSpeech.current);
+    speaking.current = null;
+    window.speechSynthesis?.cancel();
+  };
+
+  const listen = (attempt = 0) => {
     const Ctor = recognitionCtor();
     if (!Ctor || !openRef.current) {
       if (!Ctor) setStatus('Voice input is not available in this browser. Type your request.');
       return;
     }
     stopListening();
-    window.speechSynthesis?.cancel();
+    stopSpeaking();
     try {
       const r = new Ctor();
       r.lang = 'en-US';
@@ -88,6 +99,13 @@ export function VesperBubble() {
       };
       r.onerror = (e) => {
         if (e.error === 'aborted') return;
+        // Silence right after a question: keep the microphone open a little longer
+        if (e.error === 'no-speech' && silentRetries.current > 0 && openRef.current) {
+          silentRetries.current--;
+          rec.current = null;
+          window.setTimeout(() => listen(), 150);
+          return;
+        }
         setStatus(
           e.error === 'no-speech'
             ? 'I didn’t hear anything. Press the microphone or type.'
@@ -108,7 +126,10 @@ export function VesperBubble() {
       setStatus('Listening…');
     } catch {
       setListening(false);
-      setStatus('Voice input failed. Type your request.');
+      rec.current = null;
+      // The previous session may still be closing (Edge): try again shortly, a couple of times
+      if (attempt < 3) window.setTimeout(() => listen(attempt + 1), 350);
+      else setStatus('Voice input failed. Press the microphone or type your request.');
     }
   };
 
@@ -116,15 +137,39 @@ export function VesperBubble() {
   const say = (message: string, thenListen = false) => {
     setLines((l) => [...l, { who: 'vesper' as const, text: message }].slice(-6));
     const synth = window.speechSynthesis;
+    stopSpeaking();
     if (!synth || typeof SpeechSynthesisUtterance === 'undefined') {
       if (thenListen) listen();
       return;
     }
-    synth.cancel();
     const u = new SpeechSynthesisUtterance(message);
     u.lang = 'en-US';
-    if (thenListen) u.onend = () => listen();
+    speaking.current = u; // kept so the browser does not drop it (and its events) mid-speech
     synth.speak(u);
+    if (!thenListen) return;
+
+    // Reopen the microphone when Vesper stops talking. The `end` event is not
+    // reliable in every browser, so the speaking state is watched as well.
+    silentRetries.current = 2;
+    const began = performance.now();
+    let started = false;
+    let done = false;
+    const finish = () => {
+      if (done || speaking.current !== u) return;
+      done = true;
+      window.clearInterval(afterSpeech.current);
+      speaking.current = null;
+      // A short pause so the microphone does not catch the end of Vesper's own voice
+      window.setTimeout(() => listen(), 250);
+    };
+    u.onend = finish;
+    u.onerror = finish;
+    afterSpeech.current = window.setInterval(() => {
+      const elapsed = performance.now() - began;
+      if (synth.speaking || synth.pending) started = true;
+      else if (started || elapsed > 1500) finish(); // ended, or it never started (speech blocked)
+      if (elapsed > 30_000) finish();
+    }, 200);
   };
 
   const handle = async (said: string) => {
@@ -191,13 +236,14 @@ export function VesperBubble() {
       if (!recognitionCtor()) setTimeout(() => inputRef.current?.focus(), 0);
     } else {
       stopListening();
-      window.speechSynthesis?.cancel();
+      stopSpeaking();
     }
   };
 
   useEffect(
     () => () => {
       rec.current?.abort();
+      window.clearInterval(afterSpeech.current);
       window.speechSynthesis?.cancel();
     },
     [],
@@ -208,7 +254,7 @@ export function VesperBubble() {
     const said = text.trim();
     if (!said) return;
     setText('');
-    window.speechSynthesis?.cancel();
+    stopSpeaking();
     void handle(said);
   };
 
