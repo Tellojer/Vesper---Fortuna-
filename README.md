@@ -1,80 +1,134 @@
-# Vesper - Fortuna!
-Por escribir
+# Vesper
 
-## Backend
+**Tell Vesper where you are going and when. Vesper tells you where to land.**
 
-El backend calcula, para cualquier punto de la Luna, cuántas horas recibe Sol y ve la Tierra
-(considerando el relieve real), y recomienda sitios de aterrizaje según la fecha y duración de
-la misión. Todo funciona **sin internet** una vez descargados los datos.
+Vesper is a lunar landing-site navigator built by team **Vesper – Fortuna** for the
+**2026 NASA Space Apps Challenge** ("Lunar Landing Site Navigator"). It shows where the Sun and
+the Earth sit against the **real terrain horizon** of any point on the Moon, for any hour of 2027,
+and it **recommends landing sites** for a given mission window by scoring sunlight (power),
+direct-to-Earth visibility (communications) and slope (safety).
 
+- **Live app:** https://tellojer.github.io/Vesper---Fortuna-/
+- **Code:** this repository (frontend in `frontend/`, data pipeline and server in `data-pipeline/`)
+
+## The problem
+
+Missions to the lunar south pole face extreme lighting and communication constraints: the Sun skims
+the horizon and the Earth rises and sets with libration, so a few hundred metres or a few days can
+decide whether a lander has power and a link home. When a launch slips, planners must re-evaluate
+sites and dates quickly, but the tools that hold the data (QuickMap, Moon Trek, JPL Horizons) are
+built for detailed analysis one point at a time.
+
+## What Vesper does
+
+- **3D Moon** (LROC colour, LOLA relief) lit by the true Sun direction and with the Earth at its true
+  position for the selected hour (JPL Horizons).
+- **Landing site navigator:** recommends sites for the region in view, coloured by verdict
+  (suitable / acceptable / not recommended), for the chosen landing date, mission length, priority
+  (balanced, power, communications) and maximum slope.
+- **"What if the landing slips?"** slider (0–29 days): scores and the best site update instantly.
+  Example: a top site on the Connecting ridge drops from 56 to about 2 with a one-week delay, and
+  Vesper points to a better spot nearby.
+- **Any coordinate:** click the Moon or type `lat, lon` to get, from the live backend, the verdict and
+  its reasons, Sun and Earth position, countdowns to sunset and Earthset, continuous Sun/Earth
+  windows and solar energy for a vertical versus a horizontal panel.
+- **Site panel:** aptitude heat map with the top 3 points, sky dial with the real LOLA horizon, hourly
+  Sun/Earth/both bands, terrain relief and slope distribution, and rover traversability.
+- **22 catalogued sites:** Apollo 11–17, Chang'e 4/5/6, Chandrayaan-3, SLIM, IM-1, IM-2, Blue Ghost 1,
+  six south-pole candidate regions and two north-pole regions, each with its source.
+- **Voice assistant** (Web Speech API, en-US) that answers only with computed values.
+
+## How it works
+
+1. **Ephemeris.** JPL Horizons (DE441 lunar model) gives the Sun direction and the Earth position in
+   the Moon-fixed frame every hour of 2027 (`ephem_global.npz`). Earth parallax between sites is
+   handled by storing its position, not just its direction.
+2. **Terrain.** For each point, a 360° terrain horizon is ray-cast over NASA Moon Trek LOLA DEMs up to
+   150 km away with exact lunar curvature (no atmosphere, so no refraction). The DEM is chosen by
+   latitude: 30 m/px polar DEMs beyond 60°, the 128 ppd global DEM elsewhere. Files of several GB
+   are read in windows, so it runs on a laptop.
+3. **Visibility.** A body counts as visible when the centre of its disk is above the terrain horizon,
+   for an observer 2 m above the ground.
+4. **Score (0–100)** = 100 × (0.40 · %Sun + 0.25 · %Earth + 0.15 · %both + 0.20 · longest continuous
+   sunlight / mission length), with presets that shift the weights. Verdict: *not recommended* if the
+   slope exceeds the limit or the score is under 30; *suitable* from 50.
+5. **Energy.** Incident solar energy (1361 W/m²) for a sun-tracking vertical panel (∝ cos elevation)
+   versus a horizontal panel (∝ sin elevation). At the pole the horizontal panel gets almost nothing.
+
+Precomputed regions (21 × 21 points, 1 km apart, every hour of 2027) feed the app directly; the Python
+server (`data-pipeline/server.py`) answers any other coordinate in about a second, offline.
+
+## Validation
+
+| Check | Result |
+|---|---|
+| Our hourly Sun percentage vs. the official LOLA average-illumination map (the layer shown in QuickMap), 7 south-pole regions | **Correlation 0.927** over 3,086 points; regional means within 0–2.4 percentage points |
+| Moon Trek DEM elevation vs. elevations published by the LROC team | Chang'e 6 −5,264 vs −5,256 m · Chang'e 4 −5,931 vs −5,927 m · SLIM −927 vs −912 m · IM-1 2,598 vs 2,579 m |
+| Precomputed ephemeris vs. direct JPL Horizons queries at 5 sites across the Moon | Sun within 0.001°; Earth exact |
+
+## NASA and space agency data
+
+| Resource | Used for |
+|---|---|
+| [JPL Horizons](https://ssd.jpl.nasa.gov/horizons/) | Sun and Earth positions, every hour |
+| [NASA Moon Trek](https://trek.nasa.gov/moon/): `LRO_LOLA_DEM_SPole75_30mp_v04_EQ`, `LRO_LOLA_DEM_NPole75_30mp_v04_EQ`, `LRO_LOLA_DEM_Global_128ppd_v04` | Elevation, slope and terrain horizon |
+| [LROC QuickMap](https://quickmap.lroc.im-ldi.com/) / LROC featured images and NAC DTMs | Validation layers and landing-site coordinates |
+| [NASA GSFC PGDA](https://pgda.gsfc.nasa.gov/products/90) (LOLA south-pole products, illumination maps) | Candidate-site centres and validation |
+| [NASA NSSDCA](https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_sites.html) | Apollo landing coordinates (Wagner et al. 2017) |
+| [NASA SVS 4720](https://svs.gsfc.nasa.gov/4720/) and [3615](https://svs.gsfc.nasa.gov/3615/) | Moon and Earth textures |
+| [Canadian Space Agency, Moon exploration](https://www.asc-csa.gc.ca/eng/astronomy/moon-exploration/) | Mission context (Artemis participation, lunar rover delays) |
+| ISRO, JAXA, CNSA mission information | Chandrayaan-3, SLIM and Chang'e sites in the catalogue |
+
+Full list with per-file usage: [`frontend/REFERENCES.md`](frontend/REFERENCES.md).
+
+## Run it locally
+
+**Frontend** (Node 22):
+```bash
+cd frontend
+npm install
+npm run dev          # http://localhost:5173
 ```
-data-pipeline/   servidor y cálculo (Python)
-web/             app (index.html, lib/region.js, data/ con las regiones ya calculadas)
-```
 
-### 1. Instalar
-```
+**Backend server** (Python 3.10+), needed only for arbitrary coordinates:
+```bash
 cd data-pipeline
 pip install -r requirements.txt
+# download the three DEMs from Moon Trek into data-pipeline/ (not in git, ~4.2 GB):
+#   https://trek.nasa.gov/moon/TrekWS/rest/cat/data/stream?label=<file name without .tif>
+python server.py --dem-south "LRO_LOLA_DEM_SPole75_30mp_v04_EQ.tif" \
+                 --dem-north "LRO_LOLA_DEM_NPole75_30mp_v04_EQ.tif" \
+                 --dem-global "LRO_LOLA_DEM_Global_128ppd_v04.tif"
+```
+API reference: [`data-pipeline/API.md`](data-pipeline/API.md). The hosted app works without the
+server (all 22 sites and recommended areas are precomputed); custom coordinates need it running on
+`localhost:8000`.
+
+Recompute regions: `python grid_region.py --regions regions.json --dem-south ... --dem-north ...
+--dem-global ... --ephem ephem_global.npz --out ../web/data`, then `npm run sync:backend` in `frontend/`.
+
+## Repository layout
+
+```
+frontend/        Main app: Vite + React + TypeScript + three.js
+data-pipeline/   Python: ephemeris, DEM reader, horizon, grids, point engine, HTTP server
+web/             Precomputed region data (web/data) and the earlier 2D prototype
 ```
 
-### 2. Descargar los 3 DEM de NASA Moon Trek
-Los archivos son muy grandes (1–2 GB cada uno), así que **no están en el repo**. Se descargan de
-[NASA Moon Trek](https://trek.nasa.gov/moon/) buscando cada capa por su nombre y exportándola
-como GeoTIFF. Hay que guardarlos dentro de `data-pipeline/`:
+## Limitations
 
-| Archivo | Cobertura | Resolución |
-|---|---|---|
-| `LRO_LOLA_DEM_SPole75_30mp_v04_EQ.tif` | Polo sur (75°S al polo) | 30 m/px |
-| `LRO_LOLA_DEM_NPole75_30mp_v04_EQ.tif` | Polo norte (75°N al polo) | 30 m/px |
-| `LRO_LOLA_DEM_Global_128ppd_v04.tif` | Toda la Luna | ~237 m/px |
+- Data covers 2027 hourly (regenerate `ephem_global.npz` for other years).
+- Slope is measured at DEM scale (30–237 m), not rover or lander scale; terrain beyond 150 km is ignored.
+- Relay satellites are not modelled: far-side sites correctly show 0 % direct Earth visibility.
+- Chandrayaan-3 and the two north-pole coordinates are marked for verification in QuickMap.
 
-Para revisar un archivo: `python check_dem.py "ARCHIVO.tif"`. Los polares de LOLA v4 suelen venir
-en medios metros; si se carga también el global, el pipeline lo detecta y lo corrige solo.
+## Use of AI
 
-### 3. Servidor: cualquier coordenada en ~0.5 s
-```
-cd data-pipeline
-python server.py --dem-south "LRO_LOLA_DEM_SPole75_30mp_v04_EQ.tif" --dem-north "LRO_LOLA_DEM_NPole75_30mp_v04_EQ.tif" --dem-global "LRO_LOLA_DEM_Global_128ppd_v04.tif"
-```
-Abre http://localhost:8000 (sirve también la app de `web/`). `--port 8080` cambia el puerto.
-Las efemérides del Sol y la Tierra de todo 2027 ya vienen en `ephem_global.npz`. Para otro periodo:
-`python ephem_global.py --start 2028-01-01 --stop 2029-01-01` (necesita internet).
+Parts of the code, documentation and data pipeline of this project were developed with the help of
+AI assistants (Anthropic's Claude, including Claude Code). The team defined the idea, chose the data
+and methods, ran and validated the computations against NASA data, and reviewed the results. No
+AI-generated images, audio or NASA branding are used in the app.
 
-Endpoints principales (detalle en [data-pipeline/API.md](data-pipeline/API.md)):
-- `GET /api/health`: estado y DEM cargados.
-- `GET /api/missions`: catálogo de los 22 sitios (misiones que aterrizaron y regiones candidatas).
-- `GET /api/point?lat=-89.46&lon=222.51&date=2027-03-19&days=10`: horizonte, % de Sol/Tierra,
-  ventanas continuas, energía solar, puntaje y veredicto (`apto` / `aceptable` / `no recomendado`).
-- `GET /api/area?lat=..&lon=..&radius_km=5`: cuadrícula alrededor del punto, en el mismo formato
-  que las regiones precalculadas.
+## License
 
-### 4. Precalcular regiones (lo que lee la app)
-```
-cd data-pipeline
-python grid_region.py --regions regions.json --dem-south "LRO_LOLA_DEM_SPole75_30mp_v04_EQ.tif" --dem-north "LRO_LOLA_DEM_NPole75_30mp_v04_EQ.tif" --dem-global "LRO_LOLA_DEM_Global_128ppd_v04.tif" --out ../web/data
-```
-- ~1 min por región (~25 min en total). Para rehacer solo una: `--only <id>`.
-- El DEM se elige solo según la latitud: polar sur (≤60°S), polar norte (≥60°N) o global.
-- También genera `missions.json` para el mapa de inicio.
-- Mapa base de la Luna: `python make_globe.py --dem-global "LRO_LOLA_DEM_Global_128ppd_v04.tif" --out ../web/data`.
-- Los resultados ya calculados están en `web/data/`.
-
-Validación contra el mapa de iluminación promedio de NASA (polo sur, `AVGVISIB_85S_060M_201608.tiff`
-de PGDA): `python validate_nasa.py ../web/data AVGVISIB_85S_060M_201608.tiff`. Con el DEM polar de
-LOLA da una correlación de 0.93 en 2,646 puntos.
-
-Más detalle del pipeline en [data-pipeline/README_A.md](data-pipeline/README_A.md) y del frontend en
-[web/README_B.md](web/README_B.md).
-
-### Método y supuestos
-- Efemérides: JPL Horizons (DE441), sin refracción (la Luna no tiene atmósfera).
-- Terreno: LOLA, rayos hasta 150 km con curvatura lunar exacta; observador a 2 m del suelo.
-- Limitación: no se considera el terreno a más de 150 km ni fuera del DEM.
-
-### Recursos usados
-- [JPL Horizons](https://ssd.jpl.nasa.gov/horizons/): posición del Sol y la Tierra vistos desde la Luna.
-- [NASA Moon Trek](https://trek.nasa.gov/moon/): DEM LOLA polares y global.
-- [LROC QuickMap](https://quickmap.lroc.asu.edu/): verificación de coordenadas de sitios y comparación con mapas de iluminación.
-- [Agencia Espacial Canadiense](https://www.asc-csa.gc.ca/): recursos de exploración lunar.
-- [NASA PGDA](https://pgda.gsfc.nasa.gov/): mapa de iluminación promedio del polo sur para validar.
+See [LICENSE](LICENSE). NASA data and imagery are credited in `frontend/REFERENCES.md`.

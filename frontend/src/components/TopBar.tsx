@@ -4,6 +4,7 @@ import { fmtLatLon, parseLatLon } from '../lib/format';
 import { useScene } from '../scene/SceneContext';
 import { openPoint, openSite, setState, useApp } from '../state/store';
 import type { Site } from '../data/types';
+import { asset } from '../lib/asset';
 
 export function TopBar() {
   const navOpen = useApp((s) => s.navOpen);
@@ -21,7 +22,7 @@ export function TopBar() {
         {navOpen ? <X size={18} /> : <Menu size={18} />}
       </button>
       <div className="brand">
-        <img src="/brand/vesper_star_64.png" alt="" width={28} height={28} />
+        <img src={asset('/brand/vesper_star_64.png')} alt="" width={28} height={28} />
         <span className="wordmark">Vesper</span>
       </div>
       <SiteSearch />

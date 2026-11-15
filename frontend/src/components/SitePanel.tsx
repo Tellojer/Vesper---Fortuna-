@@ -21,6 +21,7 @@ import { useScene } from '../scene/SceneContext';
 import { selectedSite, setState, useApp } from '../state/store';
 import { MissionControls, useMission } from './MissionControls';
 import { VERDICT_LABEL } from './verdict';
+import { asset } from '../lib/asset';
 
 type Tab = 'landing' | 'sky' | 'terrain';
 const TABS: { id: Tab; label: string }[] = [
@@ -323,7 +324,7 @@ function AptitudeMap({ reg, rank, selected }: { reg: Region; rank: ReturnType<ty
   return (
     <figure className="aptitude">
       <div className="aptitude-map" onClick={pick} role="img" aria-label="Region suitability map; click to choose a point">
-        <img src={`/data/vesper/${reg.grid.image}`} alt="" />
+        <img src={asset(`/data/vesper/${reg.grid.image}`)} alt="" />
         <canvas ref={canvas} width={420} height={420} />
         {rank.slice(0, 3).map((r, i) =>
           r.score === null ? null : (
@@ -625,7 +626,7 @@ function RoverSection({ reg, start, picked }: { reg: Region; start: number; pick
 
       <figure className="aptitude">
         <div className="aptitude-map rover-map" role="img" aria-label="Ground a rover can reach from the landing point">
-          <img src={`/data/vesper/${reg.grid.image}`} alt="" />
+          <img src={asset(`/data/vesper/${reg.grid.image}`)} alt="" />
           <canvas ref={canvas} width={420} height={420} />
           <span className="sel-ring" style={{ left: `${mark.x * 100}%`, top: `${mark.y * 100}%` }} aria-hidden="true" />
         </div>
@@ -710,7 +711,7 @@ function TerrainTab({ reg }: { reg: Region }) {
   return (
     <>
       <figure className="relief">
-        <img src={`/data/vesper/${reg.grid.image}`} alt={`Shaded relief of the ${sizeKm} km region around the site`} />
+        <img src={asset(`/data/vesper/${reg.grid.image}`)} alt={`Shaded relief of the ${sizeKm} km region around the site`} />
         <span className="relief-mark" style={{ left: `${mark.x * 100}%`, top: `${mark.y * 100}%` }} aria-hidden="true" />
         <figcaption className="tabular">
           {sizeKm} × {sizeKm} km · {reg.grid.rows} × {reg.grid.cols} points every {reg.grid.spacing_m / 1000} km

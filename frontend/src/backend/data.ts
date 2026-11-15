@@ -1,5 +1,6 @@
 import type { Site } from '../data/types';
 import { tCountry, tName, tNote, tSource, tStatus } from './i18n';
+import { asset } from '../lib/asset';
 
 /**
  * Backend data entry points (copied unchanged by `npm run sync:backend`):
@@ -34,7 +35,7 @@ async function getJson<T>(url: string): Promise<T> {
 }
 
 export async function loadMissions(): Promise<Site[]> {
-  const raw = await getJson<RawMission[]>('/data/vesper/missions.json');
+  const raw = await getJson<RawMission[]>(asset('/data/vesper/missions.json'));
   return raw.map((m) => ({
     id: m.id,
     name: tName(m.id, m.name),
@@ -57,7 +58,7 @@ export async function loadMissions(): Promise<Site[]> {
 /** Surveyed areas (same format as missions.json). Empty when the survey has not been run. */
 export async function loadSurvey(): Promise<Site[]> {
   try {
-    const raw = await getJson<RawMission[]>('/data/vesper/survey/missions.json');
+    const raw = await getJson<RawMission[]>(asset('/data/vesper/survey/missions.json'));
     return raw
       .filter((m) => m.file)
       .map((m) => ({ id: m.id, name: m.name, lat: m.lat, lon: m.lon, kind: 'custom' as const, detail: m.note, file: `survey/${m.file}`, summary: m.summary }));
@@ -77,8 +78,8 @@ export type Ephemeris = {
 
 export async function loadEphemeris(): Promise<Ephemeris> {
   const [meta, buf] = await Promise.all([
-    getJson<{ start: string; stepH: number; n: number }>('/data/vesper/ephem.json'),
-    fetch('/data/vesper/ephem.bin').then((r) => {
+    getJson<{ start: string; stepH: number; n: number }>(asset('/data/vesper/ephem.json')),
+    fetch(asset('/data/vesper/ephem.bin')).then((r) => {
       if (!r.ok) throw new Error(`/data/vesper/ephem.bin: ${r.status}`);
       return r.arrayBuffer();
     }),

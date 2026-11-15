@@ -1,3 +1,4 @@
+import { asset } from '../lib/asset';
 /**
  * TypeScript port of the backend's web/lib/region.js (Vesper data-pipeline).
  * Reads a precomputed region (grid_region.py output) and derives everything
@@ -204,7 +205,7 @@ const cache = new Map<string, Promise<Region>>();
 export function loadRegion(file: string) {
   let p = cache.get(file);
   if (!p) {
-    p = fetch(`/data/vesper/${file}`)
+    p = fetch(asset(`/data/vesper/${file}`))
       .then((r) => {
         if (!r.ok) throw new Error(`${file}: ${r.status}`);
         return r.json() as Promise<RawRegion>;

@@ -1,3 +1,4 @@
+import { asset } from '../lib/asset';
 /**
  * Marca de Vesper.
  *
@@ -119,7 +120,7 @@ export function VesperMark() {
     <div className="vesper-mark" aria-hidden="true">
       <Trails half="back" />
       <div className="vm-flare" data-part="star">
-        <img src="/brand/vesper_flare.png" alt="" draggable={false} decoding="async" />
+        <img src={asset('/brand/vesper_flare.png')} alt="" draggable={false} decoding="async" />
       </div>
       <div className="vm-core" data-part="core" />
       <Trails half="front" />

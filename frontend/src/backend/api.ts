@@ -6,7 +6,9 @@ import type { PresetId } from './region';
  *   python server.py --dem-south ... --dem-north ... --dem-global ...
  * Set VITE_VESPER_API to point somewhere else than port 8000 of this host.
  */
-export const API_BASE: string = (import.meta.env.VITE_VESPER_API as string | undefined) ?? `http://${location.hostname}:8000`;
+export const API_BASE: string =
+  (import.meta.env.VITE_VESPER_API as string | undefined) ??
+  (location.hostname.endsWith('github.io') ? 'http://localhost:8000' : `http://${location.hostname}:8000`);
 
 /** Backend preset ids (Spanish in the API). */
 const PRESET_PARAM: Record<PresetId, string> = { balanced: 'equilibrada', solar: 'solar', comms: 'comunicacion' };
