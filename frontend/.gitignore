@@ -1,0 +1,15 @@
+node_modules/
+dist/
+data-raw/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+.impeccable/questions/
+.impeccable/mocks/
+.impeccable/review/
+.impeccable/config.local.json
+
+# NASA DEMs (4.2 GB, downloaded from Moon Trek; never committed)
+*.tif
+*.TIF

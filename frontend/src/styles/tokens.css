@@ -1,0 +1,72 @@
+/*
+ * Vesper design tokens: graphite + platinum, with the ice blue of the logo
+ * as the only accent. Square geometry: hairlines, chamfered corners, no pills.
+ */
+:root {
+  /* Surfaces (neutral graphite, no blue tint) */
+  --ink-950: #050506;
+  --ink-900: #0b0c0e;
+  --ink-850: #111214;
+  --ink-800: #17181b;
+  --ink-700: #222428;
+  --glass: rgb(17 18 20 / 0.78);
+  --glass-strong: rgb(17 18 20 / 0.9);
+  --glass-hover: rgb(217 219 222 / 0.06);
+  --glass-press: rgb(217 219 222 / 0.1);
+  --line: rgb(217 219 222 / 0.12);
+  --line-strong: rgb(217 219 222 / 0.24);
+
+  /* Platinum text */
+  --plat: #e3e5e8;
+  --plat-2: #a9adb3;
+  --plat-3: #868a90;
+
+  /* Accent: the logo's ice blue */
+  --accent: #a8d2ff;
+  --accent-strong: #d3e8ff;
+  --accent-soft: rgb(168 210 255 / 0.12);
+  --accent-ink: #06121f;
+  --metal: linear-gradient(180deg, #f2f4f6 0%, #c9cdd2 48%, #9ea3a9 100%);
+
+  /* Data colours */
+  --sun: #f0c26a;
+  --earth: #8fb6ff;
+  --danger: #ff9a8a;
+  --go: #7fd6a4;
+
+  /* Logo light (bubble) */
+  --star-white: #f4f8ff;
+  --star-ice: #bcd3f2;
+  --star-glow: #8fb6ff;
+  --line-subtle: rgb(188 211 242 / 0.14);
+
+  /* Type: Archivo (expanded for display), JetBrains Mono for measurements */
+  --font-display: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
+  --font-ui: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
+  --font-data: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-md: 0.875rem;
+  --fs-lg: 1.0625rem;
+  --fs-xl: 1.25rem;
+
+  /* Shape and depth: square, chamfered */
+  --radius-panel: 0px;
+  --radius-ctl: 2px;
+  --chamfer: 14px;
+  --blur: 16px;
+  --shadow-panel: 0 18px 48px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.35);
+
+  /* Motion (Emil Kowalski) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-press: 140ms;
+  --dur-hover: 180ms;
+  --dur-panel: 260ms;
+
+  /* Space */
+  --edge: 24px;
+  --bubble-size: 68px;
+  --sidebar-w: 280px;
+  --panel-w: 344px;
+}

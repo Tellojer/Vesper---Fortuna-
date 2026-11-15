@@ -1,0 +1,56 @@
+{
+  "body": "moon",
+  "projection": "equirectangular, centred on 0° longitude, north up",
+  "reference": "sphere, radius 1737.4 km (MOON_ME)",
+  "color": {
+    "url": "/data/moon/color_4k.jpg",
+    "width": 4096,
+    "height": 2048
+  },
+  "normal": {
+    "url": "/data/moon/normal_4k.png",
+    "width": 4096,
+    "height": 2048,
+    "exaggeration": 4
+  },
+  "height": {
+    "url": "/data/moon/height_4k.png",
+    "width": 4096,
+    "height": 2048,
+    "minM": -8962,
+    "maxM": 10625,
+    "units": "m"
+  },
+  "earth": {
+    "color": {
+      "url": "/data/earth/color_2k.jpg",
+      "width": 2048,
+      "height": 1024
+    },
+    "projection": "equirectangular, centred on 0° longitude, north up"
+  },
+  "sources": [
+    {
+      "name": "LROC WAC color mosaic (2019)",
+      "via": "NASA SVS CGI Moon Kit, ID 4720",
+      "file": "lroc_color_poles_4k.tif",
+      "url": "https://svs.gsfc.nasa.gov/4720/",
+      "credit": "NASA / GSFC / Arizona State University"
+    },
+    {
+      "name": "LOLA gridded elevation, 16 ppd",
+      "via": "NASA SVS CGI Moon Kit, ID 4720",
+      "file": "ldem_16_uint.tif",
+      "url": "https://svs.gsfc.nasa.gov/4720/",
+      "credit": "NASA / GSFC LOLA team",
+      "srcSize": "5760x2880"
+    },
+    {
+      "name": "Earth texture, Blue Marble Next Generation based",
+      "via": "NASA SVS, ID 3615",
+      "file": "flat_earth03.jpg",
+      "url": "https://svs.gsfc.nasa.gov/3615/",
+      "credit": "NASA/Goddard Space Flight Center Scientific Visualization Studio; Blue Marble Next Generation courtesy of Reto Stockli (NASA/GSFC)"
+    }
+  ]
+}
