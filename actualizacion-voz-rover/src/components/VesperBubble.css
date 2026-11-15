@@ -1,0 +1,219 @@
+/* Vive en el centro del dock inferior (ver .dock en app.css). */
+.vesper-dock {
+  position: relative;
+  width: var(--bubble-size);
+  height: var(--bubble-size);
+  z-index: 1;
+}
+
+/* Burbuja de cristal */
+.vesper-bubble {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 1px solid var(--line-subtle);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 30%, rgb(188 211 242 / 0.10), transparent 62%),
+    radial-gradient(circle at 50% 50%, rgb(18 22 57 / 0.6), rgb(5 6 22 / 0.82));
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 rgb(244 248 255 / 0.10),
+    inset 0 -10px 20px rgb(143 182 255 / 0.06),
+    0 12px 32px rgb(0 0 0 / 0.55),
+    0 0 28px rgb(143 182 255 / 0.12);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  transition:
+    transform var(--dur-press) var(--ease-out),
+    border-color var(--dur-hover) ease,
+    box-shadow var(--dur-hover) ease;
+}
+
+.vesper-bubble:active {
+  transform: scale(0.94);
+}
+
+.vesper-bubble:focus-visible {
+  outline: 2px solid var(--star-ice);
+  outline-offset: 4px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .vesper-bubble:hover {
+    border-color: var(--line-strong);
+    box-shadow:
+      inset 0 1px 0 rgb(244 248 255 / 0.14),
+      inset 0 -10px 20px rgb(143 182 255 / 0.10),
+      0 12px 32px rgb(0 0 0 / 0.55),
+      0 0 36px rgb(143 182 255 / 0.22);
+  }
+}
+
+/*
+ * Capas, de atrás hacia delante: mitad trasera de las órbitas, destello
+ * (imagen original), resplandor del latido, mitad delantera de las órbitas.
+ */
+.vesper-mark {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.vesper-mark > * {
+  position: absolute;
+  inset: 0;
+}
+
+.vm-layer {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.vm-flare img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+
+/* Resplandor extra del latido: invisible en reposo */
+.vm-core {
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(244 248 255 / 0.9) 0%, rgb(143 182 255 / 0.35) 18%, transparent 46%);
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+
+/* Hover: la burbuja ya se ilumina; el destello sube un poco */
+@media (hover: hover) and (pointer: fine) {
+  .vesper-bubble .vm-flare {
+    transition: filter var(--dur-hover) ease;
+  }
+  .vesper-bubble:hover .vm-flare {
+    filter: brightness(1.12);
+  }
+}
+
+/* Onda que sale de la burbuja */
+.vesper-ripple {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--star-ice);
+  box-shadow: 0 0 18px rgb(143 182 255 / 0.35);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Haz vertical, eco de la columna de luz del logo */
+.vesper-beam {
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  width: 2px;
+  height: 46vh;
+  margin-left: -1px;
+  background: linear-gradient(to top, rgb(188 211 242 / 0.9), rgb(143 182 255 / 0.25) 40%, transparent);
+  filter: blur(0.6px);
+  transform: scaleY(0.15);
+  transform-origin: 50% 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Voice assistant: opens above the bubble */
+.voice-panel {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 14px);
+  translate: -50% 0;
+  z-index: 2;
+  width: min(360px, 92vw);
+  padding: 12px;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
+.voice-log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  max-height: 40vh;
+  overflow-y: auto;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+
+.voice-log li {
+  padding-left: 10px;
+  border-left: 2px solid var(--accent);
+  color: var(--plat);
+}
+
+.voice-log li[data-who='you'] {
+  border-left-color: var(--line-strong);
+  color: var(--plat-2);
+}
+
+.voice-who {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--plat-3);
+}
+
+.voice-status {
+  margin-top: 10px;
+  font-size: var(--fs-xs);
+  color: var(--plat-3);
+}
+
+.voice-status[data-listening='true'] {
+  color: var(--accent-strong);
+}
+
+.voice-form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  border: 1px solid var(--line);
+}
+
+.voice-form:focus-within {
+  border-color: var(--accent);
+}
+
+.voice-form input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--plat);
+  font: inherit;
+  font-size: var(--fs-sm);
+  outline: none;
+}
+
+.voice-form input::placeholder {
+  color: var(--plat-3);
+}
+
+.voice-form .icon-btn[aria-pressed='true'] {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}

@@ -128,3 +128,92 @@
   opacity: 0;
   pointer-events: none;
 }
+
+/* Voice assistant: opens above the bubble */
+.voice-panel {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 14px);
+  translate: -50% 0;
+  z-index: 2;
+  width: min(360px, 92vw);
+  padding: 12px;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
+.voice-log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  max-height: 40vh;
+  overflow-y: auto;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+
+.voice-log li {
+  padding-left: 10px;
+  border-left: 2px solid var(--accent);
+  color: var(--plat);
+}
+
+.voice-log li[data-who='you'] {
+  border-left-color: var(--line-strong);
+  color: var(--plat-2);
+}
+
+.voice-who {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--plat-3);
+}
+
+.voice-status {
+  margin-top: 10px;
+  font-size: var(--fs-xs);
+  color: var(--plat-3);
+}
+
+.voice-status[data-listening='true'] {
+  color: var(--accent-strong);
+}
+
+.voice-form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  border: 1px solid var(--line);
+}
+
+.voice-form:focus-within {
+  border-color: var(--accent);
+}
+
+.voice-form input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--plat);
+  font: inherit;
+  font-size: var(--fs-sm);
+  outline: none;
+}
+
+.voice-form input::placeholder {
+  color: var(--plat-3);
+}
+
+.voice-form .icon-btn[aria-pressed='true'] {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}

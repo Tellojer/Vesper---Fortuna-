@@ -1,5 +1,5 @@
 import type { RegionId, Site } from '../data/types';
-import { PRESETS, rankPoints, verdict, type PresetId, type Region } from './region';
+import { PRESETS, loadRegion, rankPoints, verdict, type PresetId, type Region } from './region';
 
 /** Zone of the Moon a site belongs to, with the same rule the view uses for its title. */
 export function zoneOf(lat: number, lon: number): 'nearside' | 'farside' | 'north' | 'south' {
@@ -47,6 +47,20 @@ export function evaluateRegion(reg: Region, m: MissionParams) {
   const best = rank[0];
   const valid = rank.filter((r) => r.score !== null).length;
   return { rank, best, valid, verdict: verdict(best?.score ?? null, best?.slope ?? null, m.maxSlope) };
+}
+
+/** The recommended site with the highest score among some areas, with its own coordinates (null if none is usable). */
+export async function bestSiteInZone(areas: RecoArea[], m: MissionParams) {
+  const regs = await Promise.all(areas.map((a) => loadRegion(a.site.file!).catch(() => null)));
+  let best: { area: RecoArea; result: ReturnType<typeof evaluateRegion>; lat: number; lon: number } | null = null;
+  regs.forEach((reg, i) => {
+    if (!reg) return;
+    const result = evaluateRegion(reg, m);
+    const score = result.best?.score ?? null;
+    if (score === null || (best && score <= (best.result.best.score ?? -1))) return;
+    best = { area: areas[i], result, lat: reg.points.lat[result.best.p], lon: reg.points.lon[result.best.p] };
+  });
+  return best as { area: RecoArea; result: ReturnType<typeof evaluateRegion>; lat: number; lon: number } | null;
 }
 
 export type ZoneResult = { area: RecoArea; result: ReturnType<typeof evaluateRegion> | null; error?: string };
