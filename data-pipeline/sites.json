@@ -1,0 +1,20 @@
+[
+  {
+    "id": "test-polo",
+    "name": "Punto de prueba cerca del polo sur",
+    "lat": -89.5,
+    "lon": 0.0,
+    "country": "",
+    "status": "prueba",
+    "source": "Punto de prueba, no es un sitio real. Reemplazar."
+  },
+  {
+    "id": "apollo-11",
+    "name": "Apollo 11 (Tranquility Base)",
+    "lat": 0.674,
+    "lon": 23.473,
+    "country": "US",
+    "status": "pasada",
+    "source": "VERIFICAR coordenadas en fuente oficial (NASA/LROC) antes del demo"
+  }
+]
