@@ -1,0 +1,9 @@
+{
+  "source": "ephem_global.npz (JPL Horizons, DE441), Vesper data-pipeline",
+  "frame": "Moon-fixed: x -> lon 0, y -> lon 90E, z -> north",
+  "layout": "float32 per hour: sun_u.x, sun_u.y, sun_u.z, earth_p.x, earth_p.y, earth_p.z (km)",
+  "start": "2027-01-01T00:00",
+  "end": "2028-01-01T00:00",
+  "stepH": 1,
+  "n": 8761
+}
