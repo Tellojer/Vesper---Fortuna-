@@ -24,6 +24,8 @@ export type AppState = {
   delayDays: number;
   preset: PresetId;
   maxSlope: number;
+  /** Steepest slope the rover can drive, degrees (Terrain tab). */
+  roverSlope: number;
   /** Grid point chosen in the selected site's region (null = follow the best point). */
   pickedPoint: number | null;
   /** Recommended landing sites of the zone in view (drawn on the Moon while the navigator is open). */
@@ -58,6 +60,7 @@ let state: AppState = {
   delayDays: 0,
   preset: 'balanced',
   maxSlope: 10,
+  roverSlope: 15,
   pickedPoint: null,
   recoMarkers: [],
   navigatorOpen: false,

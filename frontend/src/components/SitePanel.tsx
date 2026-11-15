@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { Crosshair, Earth, ExternalLink, Sun, X } from 'lucide-react';
 import { tDem } from '../backend/i18n';
 import { evaluateRegion, recoAreas } from '../backend/recommend';
+import { ROVERS, ruggedness, traverse } from '../backend/rover';
 import {
   countdown,
   horizonProfile,
@@ -544,6 +545,142 @@ function HourBands({ reg, p, t0, hours, tNow }: { reg: Region; p: number; t0: nu
 
 // ---------- Terrain ----------
 
+/** Where a rover could drive from the landing point, from the area's elevation and slope grid. */
+function RoverSection({ reg, start, picked }: { reg: Region; start: number; picked: boolean }) {
+  const limit = useApp((s) => s.roverSlope);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const { rows, cols } = reg.grid;
+  const tr = useMemo(() => traverse(reg, start, limit), [reg, start, limit]);
+  const rough = useMemo(() => {
+    const tri = ruggedness(reg);
+    const sorted = tri.filter((v): v is number => v !== null).sort((x, y) => x - y);
+    return { here: tri[start], median: percentile(sorted, 0.5) };
+  }, [reg, start]);
+
+  useEffect(() => {
+    const cv = canvas.current;
+    if (!cv) return;
+    const ctx = cv.getContext('2d')!;
+    const cw = cv.width / cols;
+    const ch = cv.height / rows;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    for (let p = 0; p < reg.P; p++) {
+      const x = (p % cols) * cw;
+      const y = Math.floor(p / cols) * ch;
+      if (tr.driveKm[p] !== Infinity) {
+        ctx.fillStyle = 'rgba(127,214,164,0.42)';
+        ctx.fillRect(x + 0.5, y + 0.5, cw - 1, ch - 1);
+      } else if (tr.passable[p]) {
+        // Drivable ground the rover cannot get to from here
+        ctx.strokeStyle = 'rgba(240,194,106,0.7)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 2.5, y + 2.5, cw - 5, ch - 5);
+      } else {
+        ctx.fillStyle = 'rgba(255,154,138,0.1)';
+        ctx.fillRect(x, y, cw, ch);
+        ctx.strokeStyle = 'rgba(255,154,138,0.5)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x + 3, y + ch - 3);
+        ctx.lineTo(x + cw - 3, y + 3);
+        ctx.stroke();
+      }
+    }
+  }, [reg, tr, rows, cols]);
+
+  const mark = pointToImage(reg, start);
+  const preset = ROVERS.find((r) => r.maxSlope === limit);
+  const km = (v: number) => `${v.toFixed(v < 10 ? 1 : 0)} km`;
+
+  return (
+    <section className="rover" aria-labelledby="rover-h">
+      <h3 id="rover-h" className="rover-heading">
+        Rover traversability
+      </h3>
+      <div className="rover-presets" role="group" aria-label="Rover slope limit presets">
+        {ROVERS.map((r) => (
+          <button key={r.id} type="button" className="chip" aria-pressed={limit === r.maxSlope} title={r.source} onClick={() => setState({ roverSlope: r.maxSlope })}>
+            {r.name} · {r.maxSlope}°
+          </button>
+        ))}
+      </div>
+      <label className="slider">
+        <span className="slider-head">
+          <span>Rover slope limit</span>
+          <output className="tabular">
+            {limit}°{preset ? ` (${preset.name})` : ''}
+          </output>
+        </span>
+        <input
+          type="range"
+          min={5}
+          max={30}
+          step={1}
+          value={limit}
+          aria-valuetext={`${limit} degrees`}
+          style={{ '--fill': `${((limit - 5) / 25) * 100}%` } as CSSProperties}
+          onChange={(e) => setState({ roverSlope: Number(e.target.value) })}
+        />
+      </label>
+
+      <figure className="aptitude">
+        <div className="aptitude-map rover-map" role="img" aria-label="Ground a rover can reach from the landing point">
+          <img src={`/data/vesper/${reg.grid.image}`} alt="" />
+          <canvas ref={canvas} width={420} height={420} />
+          <span className="sel-ring" style={{ left: `${mark.x * 100}%`, top: `${mark.y * 100}%` }} aria-hidden="true" />
+        </div>
+        <figcaption className="legend">
+          <span className="swatch-reach" aria-hidden="true" />
+          <span>Reachable</span>
+          <span className="swatch-island" aria-hidden="true" />
+          <span>Drivable, cut off</span>
+          <span className="swatch-x" aria-hidden="true" />
+          <span>Too steep</span>
+        </figcaption>
+      </figure>
+
+      {tr.startOk ? (
+        <dl className="stats-list tabular">
+          <div>
+            <dt>Ground reachable from the {picked ? 'chosen' : 'best'} point</dt>
+            <dd>
+              {Math.round(tr.reachableKm2)} km² ({pct(tr.reachableShare)})
+            </dd>
+          </div>
+          <div>
+            <dt>Farthest reachable point</dt>
+            <dd>{km(tr.rangeKm)} away</dd>
+          </div>
+          <div>
+            <dt>Longest drive to reach it</dt>
+            <dd>{km(tr.longestDriveKm)}</dd>
+          </div>
+          <div>
+            <dt>Relief roughness here / area median</dt>
+            <dd>
+              {rough.here === null ? '–' : `${Math.round(rough.here)} m`} / {Math.round(rough.median)} m
+            </dd>
+          </div>
+        </dl>
+      ) : (
+        <p className="empty is-error">The landing point itself is steeper than {limit}°: this rover could not leave it.</p>
+      )}
+      <p className="note">
+        A rover moves between neighbouring grid points when both are under the limit and the grade between them is too. Limits:{' '}
+        {ROVERS.map((r, i) => (
+          <span key={r.id}>
+            {i > 0 && '; '}
+            <a href={r.url} target="_blank" rel="noreferrer">
+              {r.name} {r.maxSlope}° (NASA)
+            </a>
+          </span>
+        ))}
+        . Roughness is the Terrain Ruggedness Index (mean elevation difference to neighbouring points). Both use LOLA points 1 km apart, so they describe hills and crater walls, not rocks at rover scale.
+      </p>
+    </section>
+  );
+}
+
 function percentile(sorted: number[], q: number) {
   if (!sorted.length) return NaN;
   return sorted[Math.min(sorted.length - 1, Math.max(0, Math.round(q * (sorted.length - 1))))];
@@ -605,7 +742,8 @@ function TerrainTab({ reg }: { reg: Region }) {
           </dd>
         </div>
       </dl>
-      <p className="note">Source: {tDem(reg.region.dem)} via the Vesper data-pipeline. Roughness and rover traversability will come from the 30 m DEMs (Vesper Terrain).</p>
+      <p className="note">Source: {tDem(reg.region.dem)} via the Vesper data-pipeline.</p>
+      <RoverSection reg={reg} start={p} picked={a.picked} />
     </>
   );
 }

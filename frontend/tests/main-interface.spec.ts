@@ -173,3 +173,47 @@ test('clicking the Moon analyses that point; an unreachable backend is explained
   await expect(panel.locator('.site-name')).toHaveText('Custom site');
   await expect(panel.getByRole('alert')).toContainText('backend is not reachable');
 });
+
+test('voice assistant: asks for the region and takes you to the best site', async ({ page }) => {
+  await page.getByRole('button', { name: 'Vesper', exact: true }).click();
+  const voice = page.getByRole('dialog', { name: 'Voice assistant' });
+  await expect(voice).toContainText('Which landing do you want to plan?');
+
+  // Typed input follows the same path as speech
+  const input = voice.getByRole('textbox', { name: 'Type your request' });
+  await input.fill('Find the best landing site on March 12th at 2 pm');
+  await input.press('Enter');
+  await expect(voice).toContainText('Which region: nearside, farside, north pole or south pole?');
+  await input.fill('the far side');
+  await input.press('Enter');
+
+  // The timeline, the view and the site panel follow; the answer quotes computed values
+  await expect(page.locator('.scrub-date .clock-date')).toContainText('12 Mar 2027');
+  await expect(page.locator('.scrub-date .clock-date')).toContainText('14:00 UTC');
+  await expect(page.locator('.region-name')).toHaveText('Farside');
+  await expect(page.locator('.site-panel .site-name')).toHaveText(/^Farside \d$/);
+  await expect(voice).toContainText(/Farside \d is the best site in the Farside .* score \d+ out of 100/);
+
+  // A year outside the data is refused instead of guessed
+  await input.fill('best site on 2031-05-01 in the nearside');
+  await input.press('Enter');
+  await expect(voice).toContainText('My data covers 2027 only');
+});
+
+test('terrain tab shows where a rover can drive', async ({ page }) => {
+  await page.locator('.site-btn', { hasText: 'IM-1' }).click();
+  const panel = page.locator('.site-panel');
+  await panel.getByRole('tab', { name: 'Terrain' }).click();
+  const rover = panel.locator('.rover');
+  await expect(rover).toContainText('Rover traversability');
+  await expect(rover.locator('.slider-head output')).toHaveText('15° (VIPER)');
+  const reach = rover.locator('.stats-list div').first().locator('dd');
+  await expect(reach).toHaveText(/^\d+ km² \(\d+%\)$/);
+  const km2 = async () => Number((await reach.textContent())!.split(' ')[0]);
+  const viper = await km2();
+  // A rover that climbs steeper ground reaches at least as much
+  await rover.getByRole('button', { name: /Apollo LRV/ }).click();
+  await expect(rover.locator('.slider-head output')).toHaveText('25° (Apollo LRV)');
+  expect(await km2()).toBeGreaterThanOrEqual(viper);
+  await expect(rover.getByRole('link', { name: /VIPER 15° \(NASA\)/ })).toHaveAttribute('href', /science\.nasa\.gov/);
+});
