@@ -235,3 +235,4 @@ __pycache__/
 
 # El frontend sí usa web/lib (la regla "lib/" de arriba es de empaquetado Python)
 !web/lib/
+!frontend/src/lib/
