@@ -8,8 +8,13 @@ the Earth sit against the **real terrain horizon** of any point on the Moon, for
 and it **recommends landing sites** for a given mission window by scoring sunlight (power),
 direct-to-Earth visibility (communications) and slope (safety).
 
-- **Live app:** https://tellojer.github.io/Vesper---Fortuna-/
+- **Live app:** https://vesper-fortuna.vercel.app/
 - **Code:** this repository (frontend in `frontend/`, data pipeline and server in `data-pipeline/`)
+
+| | |
+|---|---|
+| ![Recommended landing sites on the 3D Moon](docs/screenshots/navigator.jpg) | ![Site panel: mission controls and suitability map](docs/screenshots/site-landing.jpg) |
+| ![Sky dial with the real LOLA horizon](docs/screenshots/site-sky.jpg) | ![Rover traversability from the landing point](docs/screenshots/rover.jpg) |
 
 ## The problem
 
@@ -101,8 +106,9 @@ python server.py --dem-south "LRO_LOLA_DEM_SPole75_30mp_v04_EQ.tif" \
                  --dem-global "LRO_LOLA_DEM_Global_128ppd_v04.tif"
 ```
 API reference: [`data-pipeline/API.md`](data-pipeline/API.md). The hosted app works without the
-server (all 22 sites and recommended areas are precomputed); custom coordinates need it running on
-`localhost:8000`.
+server: all 22 sites and the recommended areas are precomputed. Custom coordinates need it. With both
+on one machine the app finds it at `localhost:8000`; a hosted build reads its address from the
+`VITE_VESPER_API` variable (see [`frontend/README.md`](frontend/README.md)).
 
 Recompute regions: `python grid_region.py --regions regions.json --dem-south ... --dem-north ...
 --dem-global ... --ephem ephem_global.npz --out ../web/data`, then `npm run sync:backend` in `frontend/`.
@@ -110,9 +116,10 @@ Recompute regions: `python grid_region.py --regions regions.json --dem-south ...
 ## Repository layout
 
 ```
-frontend/        Main app: Vite + React + TypeScript + three.js
-data-pipeline/   Python: ephemeris, DEM reader, horizon, grids, point engine, HTTP server
-web/             Precomputed region data (web/data) and the earlier 2D prototype
+frontend/        Main app: Vite + React + TypeScript + three.js (see frontend/README.md)
+data-pipeline/   Python: ephemeris, DEM reader, horizon, grids, point engine, HTTP server (see data-pipeline/README.md)
+web/data/        Precomputed regions, exactly as the pipeline wrote them
+docs/            Screenshots
 ```
 
 ## Limitations

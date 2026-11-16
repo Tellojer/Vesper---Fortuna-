@@ -1,10 +1,10 @@
-# Publishes the Vesper frontend (frontend/) to GitHub Pages on every push to main.
-# One-time setup: repository Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
+# Publishes the Vesper frontend (frontend/) to GitHub Pages.
+# The live app is hosted on Vercel (https://vesper-fortuna.vercel.app/), so this workflow only runs
+# when started by hand from the Actions tab. To use it, first enable Pages once:
+# repository Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
 name: Deploy frontend to GitHub Pages
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

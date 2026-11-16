@@ -3,7 +3,7 @@ import { test, expect, type Page } from '@playwright/test';
 const rotateOf = (page: Page, part: string) =>
   page.locator(`[data-part="${part}"]`).evaluate((el) => getComputedStyle(el).rotate);
 
-test('la burbuja de Vesper está abajo al centro y es accesible', async ({ page }) => {
+test('the Vesper bubble sits bottom centre and is accessible', async ({ page }) => {
   await page.goto('/');
   const bubble = page.getByRole('button', { name: 'Vesper' });
   await expect(bubble).toBeVisible();
@@ -21,32 +21,32 @@ test('la burbuja de Vesper está abajo al centro y es accesible', async ({ page 
   await expect(bubble).toBeFocused();
 });
 
-test('las estelas recorren su órbita y vuelven; el destello no gira', async ({ page }) => {
+test('the trails travel their orbit and return; the flare does not rotate', async ({ page }) => {
   await page.goto('/');
   const bubble = page.getByRole('button', { name: 'Vesper' });
   const comet = page.locator('[data-comet]').first();
   const offsetOf = () => comet.evaluate((el) => parseFloat(getComputedStyle(el).strokeDashoffset));
-  // Espera a que la Luna termine de cargar: mientras se decodifican las texturas 4K el hilo
-  // principal se congela y la órbita (1.5 s) puede empezar y acabar sin que se vea un fotograma
+  // Wait for the Moon to finish loading: while the 4K textures decode the main thread
+  // freezes and the orbit (1.5 s) can start and end without a single frame being painted
   await expect(page.locator('.side-foot')).toBeVisible();
   await expect(page.locator('.loading-text')).toHaveCount(0);
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 
   const rest = await offsetOf();
   await bubble.click();
-  // en movimiento por la elipse
+  // moving along the ellipse
   await expect.poll(async () => Math.abs((await offsetOf()) - rest), { timeout: 3000, intervals: [100] }).toBeGreaterThan(5);
   expect(['none', '0deg']).toContain(await rotateOf(page, 'star'));
 
-  await bubble.click(); // un segundo clic no reinicia la órbita en curso
+  await bubble.click(); // a second click does not restart the orbit in progress
 
   await expect.poll(() => page.evaluate(() => document.getAnimations().length), { timeout: 5000 }).toBe(0);
-  expect(await offsetOf()).toBeCloseTo(rest, 3); // de vuelta a su posición
+  expect(await offsetOf()).toBeCloseTo(rest, 3); // back in place
   expect(['none', '0deg']).toContain(await rotateOf(page, 'star'));
   expect(await page.locator('.vesper-ripple, .vesper-beam').count()).toBe(0);
 });
 
-test('con movimiento reducido solo hay destello, sin giro', async ({ page }) => {
+test('with reduced motion there is only a flash, no rotation', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await page.getByRole('button', { name: 'Vesper' }).click();

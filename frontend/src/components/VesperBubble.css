@@ -1,4 +1,4 @@
-/* Vive en el centro del dock inferior (ver .dock en app.css). */
+/* Lives in the centre of the bottom dock (see .dock in app.css). */
 .vesper-dock {
   position: relative;
   width: var(--bubble-size);
@@ -6,7 +6,7 @@
   z-index: 1;
 }
 
-/* Burbuja de cristal */
+/* Glass bubble */
 .vesper-bubble {
   position: relative;
   display: grid;
@@ -56,8 +56,8 @@
 }
 
 /*
- * Capas, de atrás hacia delante: mitad trasera de las órbitas, destello
- * (imagen original), resplandor del latido, mitad delantera de las órbitas.
+ * Layers, back to front: back half of the orbits, flare (original image),
+ * glow of the pulse, front half of the orbits.
  */
 .vesper-mark {
   position: absolute;
@@ -84,7 +84,7 @@
   user-select: none;
 }
 
-/* Resplandor extra del latido: invisible en reposo */
+/* Extra glow of the pulse: invisible at rest */
 .vm-core {
   border-radius: 50%;
   background: radial-gradient(circle, rgb(244 248 255 / 0.9) 0%, rgb(143 182 255 / 0.35) 18%, transparent 46%);
@@ -92,7 +92,7 @@
   mix-blend-mode: screen;
 }
 
-/* Hover: la burbuja ya se ilumina; el destello sube un poco */
+/* Hover: the bubble already lights up; the flare brightens slightly */
 @media (hover: hover) and (pointer: fine) {
   .vesper-bubble .vm-flare {
     transition: filter var(--dur-hover) ease;
@@ -102,7 +102,7 @@
   }
 }
 
-/* Onda que sale de la burbuja */
+/* Ripple leaving the bubble */
 .vesper-ripple {
   position: absolute;
   inset: 0;
@@ -113,7 +113,7 @@
   pointer-events: none;
 }
 
-/* Haz vertical, eco de la columna de luz del logo */
+/* Vertical beam, echoing the column of light in the logo */
 .vesper-beam {
   position: absolute;
   left: 50%;

@@ -1,9 +1,9 @@
-// Extrae el destello del logo original sin las estelas pintadas.
-// Uso: node design/tools/extract-flare.cjs design/brand/vesper_logo_4320.png public/brand/vesper_flare.png <debug.png>
-// En los sectores diagonales (donde están las estelas) cada píxel se sustituye
-// por el más oscuro de sus 8 simétricos (la estrella y su halo tienen simetría
-// de 4 ejes; las estelas no). En los ejes se conserva el original intacto.
-// Después: recorte centrado, fondo negro -> transparencia (alfa = brillo).
+// Extracts the flare of the original logo without its painted trails.
+// Usage: node design/tools/extract-flare.cjs design/brand/vesper_logo_4320.png public/brand/vesper_flare.png <debug.png>
+// In the diagonal sectors (where the trails are) each pixel is replaced by the
+// darkest of its 8 symmetric counterparts (the star and its halo have 4-axis
+// symmetry; the trails do not). On the axes the original is kept untouched.
+// Then: centred crop, black background -> transparency (alpha = brightness).
 const fs = require('fs');
 const { chromium } = require('@playwright/test');
 
@@ -25,13 +25,13 @@ const [input, output, debug] = process.argv.slice(2);
     const d = ctx.getImageData(0, 0, W, H).data;
     const lum = (i) => d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
 
-    // Centro exacto: centroide de brillo de las agujas.
+    // Exact centre: brightness centroid of the spikes.
     let sx = 0, sw = 0, sy = 0, sh = 0;
     for (let x = 0; x < W; x++) { const l = lum((Math.round(H * 0.3) * W + x) * 4); if (l > 200) { sx += x * l; sw += l; } }
     for (let y = 0; y < H; y++) { const l = lum((y * W + Math.round(W * 0.3)) * 4); if (l > 200) { sy += y * l; sh += l; } }
     const cx = Math.round(sx / sw), cy = Math.round(sy / sh);
 
-    // Recorte: puntas de la estrella al 90% del radio.
+    // Crop: tips of the star at 90% of the radius.
     let tip = 0;
     for (let y = 0; y < cy; y++) { if (lum((y * W + cx) * 4) > 180) { tip = cy - y; break; } }
     const half = Math.round(tip / 0.9);
@@ -48,8 +48,8 @@ const [input, output, debug] = process.argv.slice(2);
     };
     const smooth = (e0, e1, v) => { const t = Math.min(1, Math.max(0, (v - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
 
-    // Perfil del halo por radio: el píxel más oscuro de cada anillo dentro de
-    // los sectores diagonales (las estelas solo ocupan algunos ángulos).
+    // Halo profile by radius: the darkest pixel of each ring inside the
+    // diagonal sectors (the trails only occupy some angles).
     const NR = Math.ceil(half * Math.SQRT2) + 2;
     const prof = new Array(NR).fill(null);
     for (let rad = 0; rad < NR; rad++) {
@@ -64,7 +64,7 @@ const [input, output, debug] = process.argv.slice(2);
       }
       prof[rad] = [d[bestK], d[bestK + 1], d[bestK + 2]];
     }
-    // Suavizar el perfil por radio para que no quede un borde de disco.
+    // Smooth the radial profile so no disc edge is left.
     const SM = 70;
     const raw = prof.map((p) => p.slice());
     for (let rad = 0; rad < NR; rad++) {
@@ -85,26 +85,26 @@ const [input, output, debug] = process.argv.slice(2);
       for (let i = 0; i < OUT; i++) {
         const dx = (i + 0.5) * S - half, dy = (j + 0.5) * S - half;
         const orig = sample(cx + dx, cy + dy);
-        // Ángulo al eje más cercano (0° en los ejes, 45° en las diagonales).
+        // Angle to the nearest axis (0° on the axes, 45° on the diagonals).
         const ang = Math.atan2(Math.abs(dy), Math.abs(dx)) * 180 / Math.PI;
         const fromAxis = Math.min(ang, 90 - ang);
-        // Conservar: banda angular de los ejes + la base ancha de las agujas
-        // junto al centro (distancia perpendicular al eje más cercano).
+        // Keep: the angular band of the axes + the wide base of the spikes
+        // next to the centre (perpendicular distance to the nearest axis).
         const rad = Math.hypot(dx, dy);
         const perp = Math.min(Math.abs(dx), Math.abs(dy));
         const baseW = 40 * (1 - smooth(0, 420, rad));
         const keep = Math.max(1 - smooth(5, 14, fromAxis), baseW > 1 ? 1 - smooth(baseW * 0.6, baseW * 1.4, perp) : 0);
-        const w = 1 - keep; // 0 = conservar original, 1 = halo limpio
+        const w = 1 - keep; // 0 = keep the original, 1 = clean halo
         const halo = profileAt(Math.hypot(dx, dy));
-        // Nunca más brillante que el original (los ejes conservan su detalle).
+        // Never brighter than the original (the axes keep their detail).
         const base = [d[orig], d[orig + 1], d[orig + 2]];
         const clean = halo.map((v, c) => Math.min(v, base[c]));
         let r = base[0] + (clean[0] - base[0]) * w;
         let g = base[1] + (clean[1] - base[1]) * w;
         let b = base[2] + (clean[2] - base[2]) * w;
-        // Negro -> transparente: alfa = canal más brillante, color sin premultiplicar.
+        // Black -> transparent: alpha = brightest channel, colour not premultiplied.
         let a = Math.max(r, g, b);
-        // Desvanecer el borde del recorte para que no se vea el cuadrado.
+        // Fade the edge of the crop so the square does not show.
         const rr = Math.hypot(dx, dy) / half;
         a *= 1 - smooth(0.82, 1.0, rr);
         const k = (j * OUT + i) * 4;
@@ -114,7 +114,7 @@ const [input, output, debug] = process.argv.slice(2);
     }
     octx.putImageData(od, 0, 0);
 
-    // Debug: original recortado | limpio, sobre negro.
+    // Debug: cropped original | cleaned, on black.
     const dbg = document.createElement('canvas');
     dbg.width = OUT * 2; dbg.height = OUT;
     const dctx = dbg.getContext('2d');

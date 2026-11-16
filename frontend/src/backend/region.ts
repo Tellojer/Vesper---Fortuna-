@@ -1,8 +1,7 @@
 import { asset } from '../lib/asset';
 /**
- * TypeScript port of the backend's web/lib/region.js (Vesper data-pipeline).
- * Reads a precomputed region (grid_region.py output) and derives everything
- * the UI shows. Same maths and conventions as the original:
+ * Reader for the regions computed by the Vesper data pipeline (grid_region.py):
+ * decodes a precomputed region and derives everything the UI shows. Conventions:
  *   azimuth 0 = north, 90 = east; elevations in degrees;
  *   p = grid point index (row * cols + col, row 0 = top of the map);
  *   t = hour index from times.start (step times.step_h hours).

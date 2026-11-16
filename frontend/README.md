@@ -1,7 +1,7 @@
-# Vesper
+# Vesper frontend
 
-Compare lunar landing sites and dates: Sun, Earth and terrain for the same site and moment.
-NASA Space Apps 2026, challenge "Lunar Landing Site Navigator".
+The Vesper web app: Vite + React + TypeScript + three.js. Project overview, method and data sources
+are in the [repository README](../README.md); every reference is listed in [REFERENCES.md](REFERENCES.md).
 
 ## Run
 
@@ -9,58 +9,77 @@ NASA Space Apps 2026, challenge "Lunar Landing Site Navigator".
 npm install
 npm run dev        # http://localhost:5173
 npm test           # Playwright: Chromium, Firefox, WebKit
-npm run build
+npm run build      # static site in dist/
 ```
 
-## Main interface
+## What is in the app
 
-- Full-screen 3D Moon (three.js) with LROC WAC colour and LOLA relief, Lunar-Lambert shading, earthshine, and a cool fill so the night side stays dark but readable.
-- Six regions: Orthographic Nearside, Farside, North Pole, South Pole; Stereographic North and South Pole (shader, r = 2 tan(c/2)). The title follows the view; zooming in close over a pole opens its stereographic map.
-- Sun direction and Earth position from the backend ephemeris (JPL Horizons). Earth at its true distance and size, lit by the same Sun; the Sun at 0.53° angular size. "Face Earth" and "Face Sun" frame each body beside the limb.
-- The backend's 22 sites (landed and candidates) plus search by name or `lat, lon` (e.g. `-85.3, 31.2` or `85.3 S 31.2 E`).
-- Timeline over the backend's hourly data (all of 2027) with play, speed and a date picker; it moves the terminator.
-- Site panel, from the site's precomputed region: Sun and Earth elevation and visibility against the LOLA horizon, next sunrise/sunset and Earthrise/Earthset; mission window (duration, priority preset, max slope) with the backend's score and verdict; terrain (elevation, slope distribution, shaded relief).
-- Keyboard: arrows rotate (Shift for larger steps), `+`/`−` zoom, `1`–`6` regions, Space play/pause, `[` `]` ∓1 day, `,` `.` ∓1 hour, `E` face Earth, `S` face Sun, `/` search, Esc close.
+- **3D Moon** (three.js) with LROC WAC colour and LOLA relief, Lunar-Lambert shading, earthshine and a
+  cool fill so the night side stays dark but readable. Sun direction and Earth position come from the
+  ephemeris (JPL Horizons); the Earth is drawn at its true distance and size.
+- **Six views:** orthographic nearside, farside, north pole and south pole, plus stereographic maps of
+  both poles. Zooming in close over a pole opens its stereographic map.
+- **Landing site navigator** (button at the top right): recommended sites for the region in view,
+  ranked by score for the chosen landing date, mission length, priority and maximum slope. Each site
+  is the best point of an analysed 20 × 20 km area, drawn on the Moon as a diamond coloured by verdict.
+- **Missions** (left menu): the 22 catalogued sites, with a switch to hide their markers on the Moon.
+- **Site panel:** *Landing* (mission controls, "What if the landing slips?", suitability map with the
+  top three points, score, countdowns to sunset and Earthset), *Sky* (Sun and Earth elevation, sky dial
+  with the real LOLA horizon, hourly visibility bands) and *Terrain* (relief, slope distribution, rover
+  traversability).
+- **Custom sites:** click the Moon or type `lat, lon` (for example `-85.3, 31.2`) to have the backend
+  server analyse that exact point. This needs the server running (see below).
+- **Voice assistant** (the bubble at the bottom): ask for the best landing site on a day and time;
+  Vesper asks which region and takes the view there. Speech recognition and synthesis use the browser's
+  Web Speech API (en-US); typed input always works. Understanding is rule-based
+  (`src/voice/intent.ts`) and every figure it says is computed.
+- **Timeline** over all of 2027, hourly, with play, speed and a date picker.
+- **Keyboard:** arrows rotate (Shift for larger steps), `+`/`−` zoom, `1`–`6` views, Space play/pause,
+  `[` `]` ∓1 day, `,` `.` ∓1 hour, `E` face Earth, `S` face Sun, `/` search, Esc close.
 - Respects `prefers-reduced-motion`; mobile layout with a drawer and a bottom sheet.
 
 ## Data
 
-All values shown in the UI come from the team's backend ([Tellojer/Vesper---Fortuna-](https://github.com/Tellojer/Vesper---Fortuna-), cloned next to this folder as `../vesper-data`). Its outputs are copied unchanged:
+Everything the app shows is computed by the data pipeline in [`../data-pipeline`](../data-pipeline).
+Its outputs are copied unchanged into `public/data/vesper/`:
 
 ```bash
 npm run sync:backend
 ```
 
-| Copied to `public/data/vesper/` | What it holds |
+| In `public/data/vesper/` | What it holds |
 |---|---|
-| `missions.json` | 22 sites (14 landed, 8 candidates) with verified coordinates and sources. |
-| `region-<id>.json` + `.png` | Precomputed region per site: 21 × 21 grid with elevation and slope, LOLA horizon, Sun and Earth visibility per point for every hour of 2027 (JPL Horizons + terrain). Decoded by `src/backend/region.ts`, a TypeScript port of the backend's `web/lib/region.js`. |
-| `ephem.bin` + `ephem.json` | `ephem_global.npz` re-packed for the browser: Sun direction and Earth position in the Moon frame, hourly. Drives the globe's lighting, Earth's position and its distance label. |
+| `missions.json` | 22 sites (14 landed, 8 candidates) with coordinates and sources |
+| `region-<id>.json` + `.png` | One 21 × 21 grid per site with elevation and slope, the LOLA horizon, and Sun and Earth visibility per point for every hour of 2027. Decoded by `src/backend/region.ts` |
+| `survey/` | 20 more areas far from the missions, chosen by surveying the whole Moon (`design/tools/survey_zones.py`) |
+| `ephem.bin` + `ephem.json` | The pipeline's `ephem_global.npz` re-packed for the browser: Sun direction and Earth position in the Moon frame, hourly |
 
-- The timeline covers the backend's date range (all of 2027 today); regenerate the ephemeris in the backend to change it.
-- The backend's Spanish strings (status, countries, notes, sources) are translated in `src/backend/i18n.ts`; the data itself is not modified.
-- Coordinate search only moves the view: data exists for the precomputed sites.
-- The globe textures (`public/data/moon/`) are prepared by `design/tools/prepare-moon.mjs` from NASA SVS 4720 and 3615.
+- Some strings in the pipeline's data are Spanish (status, countries, notes, verdict reasons); they are
+  translated for display in `src/backend/i18n.ts`. The data itself is not modified.
+- The globe textures in `public/data/moon/` are prepared by `design/tools/prepare-moon.mjs` from NASA
+  SVS 4720 and 3615.
 
-### DEMs for terrain roughness and traversability
+## Custom sites and the backend server
 
-The backend uses three Moon Trek LOLA DEMs (git-ignored, ~4.2 GB), downloaded to `../vesper-data/data-pipeline/`:
+A click on the Moon calls `/api/point` on the pipeline's server (`../data-pipeline/server.py`, see
+[API.md](../data-pipeline/API.md)). By default the app looks for it on port 8000 of the same host, so
+it works when both run on one machine. For a hosted build, set `VITE_VESPER_API` to the server's
+`https` URL at build time. Without a server the rest of the app works from the precomputed data.
 
-| File | Coverage | Type |
-|---|---|---|
-| `LRO_LOLA_DEM_SPole75_30mp_v04_EQ.tif` | 75° S to the pole, 30 m/px | Float32 |
-| `LRO_LOLA_DEM_NPole75_30mp_v04_EQ.tif` | 75° N to the pole, 30 m/px | Int16 |
-| `LRO_LOLA_DEM_Global_128ppd_v04.tif` | Global, 128 ppd (~237 m/px) | Float32 |
+## Source layout
 
-Source: `https://trek.nasa.gov/moon/TrekWS/rest/cat/data/stream?label=<name without .tif>`.
+| Path | Content |
+|---|---|
+| `src/scene/` | The 3D scene, shaders and picking |
+| `src/backend/` | Data loading, the region format, scoring and recommendations, rover traversability, the server client |
+| `src/components/` | Interface: top bar, sidebar, navigator, site panel, custom-site panel, dock, voice bubble |
+| `src/voice/` | Parsing of spoken or typed landing requests |
+| `src/state/` | Application state |
+| `tests/` | End-to-end tests (Playwright) |
+| `design/tools/` | Scripts that prepare textures, sync the pipeline data and survey the Moon |
 
-Polar maps currently use the global 4K mosaic (about 2.7 km/px), so stereographic zoom stops near ±6° from the pole. Loading a polar DEM or mosaic is the next data step; lower `STEREO_MIN_HALF` in `src/scene/MoonScene.ts` when it is in.
+## Credits
 
-## Data sources and attribution
-
-- LROC WAC colour mosaic (2019) and LOLA gridded elevation (16 ppd), via the NASA SVS CGI Moon Kit, ID 4720: https://svs.gsfc.nasa.gov/4720/ (NASA / GSFC / Arizona State University; LOLA team).
-- Ephemeris: series and libration formulas after J. Meeus, *Astronomical Algorithms*, 2nd ed.
-- Site coordinates: see `coordSource` in `public/data/sites.json`; IM-2 and Shackleton rim are marked approximate and must be verified.
-- Fonts: Fraunces and Sora (SIL Open Font License), self-hosted via Fontsource. Icons: Lucide (ISC).
-- Earth texture: NASA SVS, ID 3615 (`flat_earth03.jpg`, 2048x1024, based on Blue Marble Next Generation): https://svs.gsfc.nasa.gov/3615/. Credit: NASA/Goddard Space Flight Center Scientific Visualization Studio; Blue Marble Next Generation data courtesy of Reto Stockli (NASA/GSFC). Its look (cloud and ocean colour) was art-directed by SVS. Earth's spin is set so the scene's Sun falls on Earth's sub-solar point (Sun right ascension and Greenwich sidereal time).
-- AI use: this code was written with an AI coding assistant (Claude); declare it in the submission.
+- Fonts: Archivo and JetBrains Mono (SIL Open Font License), self-hosted via Fontsource. Icons: Lucide (ISC).
+- This code was written with the help of an AI coding assistant (Anthropic's Claude); see "Use of AI"
+  in the repository README.

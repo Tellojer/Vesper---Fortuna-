@@ -1,10 +1,11 @@
 // Copies the Vesper backend outputs into the frontend, unchanged.
-// Usage: npm run sync:backend   (expects the backend repo at ../vesper-data)
+// Usage: npm run sync:backend   (run in frontend/; the pipeline is the repository root, one level up.
+//        Set VESPER_BACKEND to use another checkout.)
 //
-//   ../vesper-data/web/data/*                  -> public/data/vesper/   (missions, regions, PNGs)
-//   ../vesper-data/web/data-survey/*           -> public/data/vesper/survey/   (optional: areas from
-//        design/tools/survey_zones.py + the backend's grid_region.py)
-//   ../vesper-data/data-pipeline/ephem_global.npz
+//   ../web/data/*                  -> public/data/vesper/   (missions, regions, PNGs)
+//   ../web/data-survey/*           -> public/data/vesper/survey/   (areas from design/tools/survey_zones.py +
+//        grid_region.py; when that folder is absent, the survey already in public/ is kept)
+//   ../data-pipeline/ephem_global.npz
 //        -> public/data/vesper/ephem.bin + ephem.json
 //
 // ephem_global.npz (JPL Horizons, Moon-fixed frame, hourly) is only re-packed so a
@@ -15,11 +16,20 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import zlib from 'node:zlib';
 
-const BACKEND = process.env.VESPER_BACKEND ?? path.resolve('..', 'vesper-data');
+const BACKEND = process.env.VESPER_BACKEND ?? path.resolve('..');
 const SRC = path.join(BACKEND, 'web', 'data');
 const OUT = path.resolve('public', 'data', 'vesper');
 
-await fs.rm(OUT, { recursive: true, force: true });
+const SURVEY = path.join(BACKEND, 'web', 'data-survey');
+const exists = (p) => fs.access(p).then(() => true, () => false);
+if (!(await exists(SRC))) throw new Error(`No pipeline data at ${SRC}. Run this in frontend/ or set VESPER_BACKEND.`);
+
+// Clear the previous copy; the survey is only replaced when the pipeline has a new one
+const keepSurvey = !(await exists(SURVEY));
+for (const f of await fs.readdir(OUT).catch(() => [])) {
+  if (keepSurvey && f === 'survey') continue;
+  await fs.rm(path.join(OUT, f), { recursive: true, force: true });
+}
 await fs.mkdir(OUT, { recursive: true });
 
 let copied = 0;
@@ -28,16 +38,12 @@ for (const f of await fs.readdir(SRC)) {
   copied++;
 }
 
-const SURVEY = path.join(BACKEND, 'web', 'data-survey');
-try {
-  const files = await fs.readdir(SURVEY);
+if (!keepSurvey) {
   await fs.mkdir(path.join(OUT, 'survey'), { recursive: true });
-  for (const f of files) {
+  for (const f of await fs.readdir(SURVEY)) {
     await fs.copyFile(path.join(SURVEY, f), path.join(OUT, 'survey', f));
     copied++;
   }
-} catch (e) {
-  if (e.code !== 'ENOENT') throw e;
 }
 
 // --- minimal .npz reader (zip of .npy files) ---

@@ -8,6 +8,9 @@ import { msAt, setState, useApp } from '../state/store';
 import { MissionControls, useMission } from './MissionControls';
 import { VERDICT_LABEL } from './verdict';
 
+/** Running next to the developer's own server, as opposed to the hosted site. */
+const LOCAL = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+
 type Status = { state: 'loading' } | { state: 'ready' } | { state: 'error'; message: string; offline: boolean };
 
 /**
@@ -87,12 +90,20 @@ export function PointPanel() {
 
       {status.state === 'error' ? (
         <div className="empty is-error" role="alert">
-          {status.offline ? (
+          {status.offline && LOCAL ? (
             <>
               <p className="empty-title">The Vesper backend is not reachable</p>
               <p>
                 Custom sites are computed by the backend server at <span className="mono">{API_BASE}</span>. Start it from <span className="mono">data-pipeline</span> with{' '}
                 <span className="mono">python server.py</span> and the three DEMs, then pick the point again.
+              </p>
+            </>
+          ) : status.offline ? (
+            <>
+              <p className="empty-title">Live analysis is offline right now</p>
+              <p>
+                Any coordinate is analysed on demand by the Vesper server, which reads 4.2 GB of NASA LOLA terrain and is not online at the moment. The rest of the app works from precomputed
+                data: open the Landing site navigator to see the recommended sites of this region, or pick a mission on the left.
               </p>
             </>
           ) : (

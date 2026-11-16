@@ -1,16 +1,16 @@
-// Prepara las texturas lunares de NASA SVS (CGI Moon Kit, ID 4720) para la web.
-// Uso: node design/tools/prepare-moon.mjs
+// Prepares the NASA SVS lunar textures (CGI Moon Kit, ID 4720) for the web.
+// Usage: node design/tools/prepare-moon.mjs
 //
-// Entradas (data-raw/nasa-svs-4720/):
-//   lroc_color_poles_4k.tif  color LROC WAC, 4096x2048, RGB 8 bit
-//   ldem_16_uint.tif         LOLA, 5760x2880, uint16 en medios metros, +20000 de offset,
-//                            relativo a una esfera de 1737.4 km
-// Salidas (public/data/moon/):
-//   color_4k.jpg             color
-//   normal_4k.png            normales en espacio tangente (R = este, G = norte), con
-//                            exageración vertical NORMAL_EXAGGERATION
-//   height_4k.png            altura 8 bit, de minM a maxM (ver manifest)
-//   manifest.json            fuentes, unidades y rangos
+// Inputs (data-raw/nasa-svs-4720/):
+//   lroc_color_poles_4k.tif  LROC WAC colour, 4096x2048, RGB 8 bit
+//   ldem_16_uint.tif         LOLA, 5760x2880, uint16 in half metres, +20000 offset,
+//                            relative to a 1737.4 km sphere
+// Outputs (public/data/moon/):
+//   color_4k.jpg             colour
+//   normal_4k.png            tangent-space normals (R = east, G = north), with the
+//                            vertical exaggeration NORMAL_EXAGGERATION
+//   height_4k.png            8-bit height, from minM to maxM (see the manifest)
+//   manifest.json            sources, units and ranges
 import sharp from 'sharp';
 import fs from 'node:fs/promises';
 import path from 'node:path';

@@ -10,13 +10,13 @@ import { VERDICT_LABEL } from './verdict';
 import './VesperBubble.css';
 
 /**
- * Burbuja de Vesper, abajo al centro.
- * Al hacer clic:
- * - el destello (imagen original) palpita; no gira;
- * - cada estela recorre su órbita elíptica completa alrededor del destello,
- *   pasando por detrás en la mitad trasera, y vuelve a su posición;
- * - una onda sale de la burbuja y un haz sube como el del logo;
- * - se abre el asistente de voz (Vesper escucha; también se puede escribir).
+ * The Vesper bubble, bottom centre.
+ * On click:
+ * - the flare (the original image) pulses; it does not rotate;
+ * - each trail travels its whole elliptical orbit around the flare, passing
+ *   behind it on the back half, and returns to its place;
+ * - a ripple leaves the bubble and a beam rises like the one in the logo;
+ * - the voice assistant opens (Vesper listens; typing works too).
  *
  * Voice assistant: the user asks for the best landing site on a day and time,
  * Vesper asks which region, and takes the view to the best recommended site
@@ -318,19 +318,19 @@ function ignite(root: HTMLElement) {
   const core = root.querySelector('[data-part="core"]')!;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Movimiento reducido: solo un destello de luz, sin órbita ni escalas.
+  // Reduced motion: only a flash of light, no orbit and no scaling.
   if (reduce) {
     retarget(core, [{ opacity: 1, offset: 0.3 }, { opacity: 0 }], 480, 'ease');
     spawn(root, 'vesper-ripple', [{ opacity: 0.5 }, { opacity: 0 }], 480);
     return;
   }
 
-  // Palpitar del destello: retoma desde el valor actual si ya estaba latiendo.
+  // Flare pulse: picks up from the current value if it was already pulsing.
   retarget(star, [{ scale: '1.18', offset: 0.38 }, { scale: '1' }], PULSE_MS);
   retarget(core, [{ scale: '1.5', opacity: 1, offset: 0.25 }, { scale: '1', opacity: 0 }], PULSE_MS);
 
-  // Órbita: cada capa del cometa avanza un perímetro completo (100) por su
-  // elipse y termina donde empezó. Si ya está orbitando, la deja terminar.
+  // Orbit: every comet layer advances one full perimeter (100) along its
+  // ellipse and ends where it started. An orbit in progress is left to finish.
   const comets = root.querySelectorAll<SVGPathElement>('[data-comet]');
   if (comets[0]?.getAnimations().length === 0) {
     for (const path of comets) {
@@ -355,8 +355,8 @@ function ignite(root: HTMLElement) {
 }
 
 /**
- * Anima desde el valor actual (aunque haya otra animación a medias) hasta el
- * destino, y al terminar devuelve el control al CSS.
+ * Animates from the current value (even with another animation half way)
+ * to the target, and hands control back to the CSS when it ends.
  */
 function retarget(el: Element, frames: Keyframe[], duration: number, easing = EASE_OUT) {
   const style = (el as HTMLElement).style;
@@ -379,7 +379,7 @@ function current(el: Element, prop: string): string {
   return v;
 }
 
-/** Crea una pieza efímera (onda, haz), la anima y la retira. Varias pueden convivir. */
+/** Creates a short-lived piece (ripple, beam), animates it and removes it. Several can coexist. */
 function spawn(root: HTMLElement, className: string, frames: Keyframe[], duration: number) {
   const el = document.createElement('span');
   el.className = className;

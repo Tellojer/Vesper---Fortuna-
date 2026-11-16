@@ -219,8 +219,8 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# ---- Vesper: datos pesados y cachés del pipeline ----
-# DEM / mosaicos de NASA (se descargan de Moon Trek, ver README)
+# ---- Vesper: heavy data and pipeline caches ----
+# NASA DEMs / mosaics (downloaded from Moon Trek, see README)
 *.tif
 *.TIF
 *.tiff
@@ -233,6 +233,6 @@ __pycache__/
 *.pyc
 *.zip
 
-# El frontend sí usa web/lib (la regla "lib/" de arriba es de empaquetado Python)
+# web/lib and frontend/src/lib are source code (the "lib/" rule above is for Python packaging)
 !web/lib/
 !frontend/src/lib/

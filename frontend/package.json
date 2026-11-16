@@ -2,7 +2,7 @@
   "name": "vesper",
   "version": "0.1.0",
   "private": true,
-  "description": "Vesper: visor lunar con texturas, relieve y capas (NASA Space Apps)",
+  "description": "Vesper: lunar landing site navigator (NASA Space Apps 2026)",
   "type": "module",
   "scripts": {
     "dev": "vite",
