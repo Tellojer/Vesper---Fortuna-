@@ -27,8 +27,9 @@ npm run build      # static site in dist/
   top three points, score, countdowns to sunset and Earthset), *Sky* (Sun and Earth elevation, sky dial
   with the real LOLA horizon, hourly visibility bands) and *Terrain* (relief, slope distribution, rover
   traversability).
-- **Custom sites:** click the Moon or type `lat, lon` (for example `-85.3, 31.2`) to have the backend
-  server analyse that exact point. This needs the server running (see below).
+- **Custom sites:** click the Moon or type `lat, lon` (for example `-85.3, 31.2`). With the backend
+  server running, that exact point is analysed live; without it the app answers with the nearest
+  point of a precomputed global grid and says how far away it is (see below).
 - **Voice assistant** (the bubble at the bottom): ask for the best landing site on a day and time;
   Vesper asks which region and takes the view there. Speech recognition and synthesis use the browser's
   Web Speech API (en-US); typed input always works. Understanding is rule-based
@@ -52,6 +53,7 @@ npm run sync:backend
 | `missions.json` | 22 sites (14 landed, 8 candidates) with coordinates and sources |
 | `region-<id>.json` + `.png` | One 21 × 21 grid per site with elevation and slope, the LOLA horizon, and Sun and Earth visibility per point for every hour of 2027. Decoded by `src/backend/region.ts` |
 | `survey/` | 20 more areas far from the missions, chosen by surveying the whole Moon (`design/tools/survey_zones.py`) |
+| `global-grid.json` + `.bin` | About 2,600 points over the whole Moon (4° apart) with elevation, slope and hourly Sun and Earth visibility, computed by `design/tools/global_grid.py` with the pipeline's engine. Read by `src/backend/globalGrid.ts` |
 | `ephem.bin` + `ephem.json` | The pipeline's `ephem_global.npz` re-packed for the browser: Sun direction and Earth position in the Moon frame, hourly |
 
 - Some strings in the pipeline's data are Spanish (status, countries, notes, verdict reasons); they are
@@ -61,10 +63,18 @@ npm run sync:backend
 
 ## Custom sites and the backend server
 
-A click on the Moon calls `/api/point` on the pipeline's server (`../data-pipeline/server.py`, see
-[API.md](../data-pipeline/API.md)). By default the app looks for it on port 8000 of the same host, so
-it works when both run on one machine. For a hosted build, set `VITE_VESPER_API` to the server's
-`https` URL at build time. Without a server the rest of the app works from the precomputed data.
+A click on the Moon first calls `/api/point` on the pipeline's server (`../data-pipeline/server.py`,
+see [API.md](../data-pipeline/API.md)), which analyses that exact coordinate against the LOLA terrain.
+By default the app looks for it on port 8000 of the same host, so it works when both run on one
+machine. For a hosted build, set `VITE_VESPER_API` to the server's `https` URL at build time.
+
+When the server cannot be reached, `src/backend/globalGrid.ts` answers from the precomputed global
+grid: it takes the nearest grid point and scores it for the mission window with the same rules as the
+server. On the grid points themselves the two give identical results. The panel then says "Nearest
+precomputed point" and how many kilometres away it is (up to about 100 km). At mid latitudes sunlight
+and Earth contact change little over that distance (in a test of 28 random points the score differed
+by a median of 1.3 points), while slope is local and can change the verdict. Near the poles conditions
+change within a few kilometres, so there the answer is only a rough guide and the panel says so.
 
 ## Source layout
 

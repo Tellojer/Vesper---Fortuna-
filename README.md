@@ -34,9 +34,11 @@ built for detailed analysis one point at a time.
 - **"What if the landing slips?"** slider (0–29 days): scores and the best site update instantly.
   Example: a top site on the Connecting ridge drops from 56 to about 2 with a one-week delay, and
   Vesper points to a better spot nearby.
-- **Any coordinate:** click the Moon or type `lat, lon` to get, from the live backend, the verdict and
-  its reasons, Sun and Earth position, countdowns to sunset and Earthset, continuous Sun/Earth
-  windows and solar energy for a vertical versus a horizontal panel.
+- **Any coordinate:** click the Moon or type `lat, lon` to get the verdict and its reasons, sunlight
+  and Earth contact, countdowns to sunset and Earthset, and solar energy for a vertical versus a
+  horizontal panel. With the backend server running, that exact point is analysed live. Without it
+  (as in the hosted app) Vesper answers with the nearest point of a precomputed grid of about 2,600
+  points covering the whole Moon, and says how far that point is.
 - **Site panel:** aptitude heat map with the top 3 points, sky dial with the real LOLA horizon, hourly
   Sun/Earth/both bands, terrain relief and slope distribution, and rover traversability.
 - **22 catalogued sites:** Apollo 11–17, Chang'e 4/5/6, Chandrayaan-3, SLIM, IM-1, IM-2, Blue Ghost 1,
@@ -106,9 +108,10 @@ python server.py --dem-south "LRO_LOLA_DEM_SPole75_30mp_v04_EQ.tif" \
                  --dem-global "LRO_LOLA_DEM_Global_128ppd_v04.tif"
 ```
 API reference: [`data-pipeline/API.md`](data-pipeline/API.md). The hosted app works without the
-server: all 22 sites and the recommended areas are precomputed. Custom coordinates need it. With both
-on one machine the app finds it at `localhost:8000`; a hosted build reads its address from the
-`VITE_VESPER_API` variable (see [`frontend/README.md`](frontend/README.md)).
+server: the 22 sites, the recommended areas and a global grid for custom coordinates are precomputed.
+The server adds the exact analysis of any coordinate. With both on one machine the app finds it at
+`localhost:8000`; a hosted build reads its address from the `VITE_VESPER_API` variable (see
+[`frontend/README.md`](frontend/README.md)).
 
 Recompute regions: `python grid_region.py --regions regions.json --dem-south ... --dem-north ...
 --dem-global ... --ephem ephem_global.npz --out ../web/data`, then `npm run sync:backend` in `frontend/`.

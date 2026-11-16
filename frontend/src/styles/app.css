@@ -2149,6 +2149,22 @@
   border: 1px solid rgb(240 194 106 / 0.8);
 }
 
+/* Custom site answered from the precomputed global grid */
+.nearest-note {
+  margin: 0 0 10px;
+  padding: 9px 11px;
+  border: 1px solid var(--line-strong);
+  border-left: 2px solid var(--accent);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--plat-2);
+}
+
+.nearest-note b {
+  color: var(--plat);
+  font-weight: 600;
+}
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 1100px) {

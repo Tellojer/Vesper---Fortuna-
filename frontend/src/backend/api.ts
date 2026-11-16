@@ -1,14 +1,22 @@
 import type { PresetId } from './region';
 
 /**
- * Live Vesper backend (data-pipeline/server.py, see API.md). It analyses any
- * coordinate of the Moon on demand, so it only works while that server runs:
+ * Live Vesper backend (data-pipeline/server.py, see API.md). It analyses the
+ * exact coordinate asked for, so it only works while that server runs:
  *   python server.py --dem-south ... --dem-north ... --dem-global ...
  * Set VITE_VESPER_API to point somewhere else than port 8000 of this host.
+ * When it cannot be reached the app falls back to the precomputed global
+ * grid (globalGrid.ts).
  */
 export const API_BASE: string =
   (import.meta.env.VITE_VESPER_API as string | undefined) ??
   (location.hostname.endsWith('github.io') ? 'http://localhost:8000' : `http://${location.hostname}:8000`);
+
+/** The server answered, and its answer was an error (bad parameter, date out of range, no DEM). */
+export class BackendError extends Error {}
+
+/** Longest the live server may take before the app falls back to the precomputed grid. */
+const TIMEOUT_MS = 15_000;
 
 /** Backend preset ids (Spanish in the API). */
 const PRESET_PARAM: Record<PresetId, string> = { balanced: 'equilibrada', solar: 'solar', comms: 'comunicacion' };
@@ -59,8 +67,12 @@ export async function fetchPoint(q: PointQuery, signal?: AbortSignal): Promise<P
     max_slope: String(q.maxSlope),
     series: '0',
   });
-  const res = await fetch(`${API_BASE}/api/point?${params}`, { signal });
+  // Anything other than a JSON answer from the server (no connection, a dead
+  // tunnel's error page, a timeout) is left as a plain error: the caller falls back
+  const timeout = AbortSignal.timeout(TIMEOUT_MS);
+  const res = await fetch(`${API_BASE}/api/point?${params}`, { signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
   const body = (await res.json()) as PointResult | { error: string };
-  if (!res.ok || 'error' in body) throw new Error('error' in body ? body.error : `${res.status} ${res.statusText}`);
+  if ('error' in body) throw new BackendError(body.error);
+  if (!res.ok || !('window' in body)) throw new Error(`${res.status} ${res.statusText}`);
   return body;
 }

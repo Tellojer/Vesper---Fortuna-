@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Crosshair, X } from 'lucide-react';
-import { API_BASE, fetchPoint, verdictOf, type PointResult } from '../backend/api';
+import { API_BASE, BackendError, fetchPoint, verdictOf, type PointResult } from '../backend/api';
+import { analyseOffline } from '../backend/globalGrid';
 import { tDem, tReason } from '../backend/i18n';
 import { fmtDate, fmtDuration, fmtLatLon } from '../lib/format';
 import { useScene } from '../scene/SceneContext';
-import { msAt, setState, useApp } from '../state/store';
+import { getState, msAt, setState, useApp } from '../state/store';
 import { MissionControls, useMission } from './MissionControls';
 import { VERDICT_LABEL } from './verdict';
 
@@ -14,8 +15,9 @@ const LOCAL = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
 type Status = { state: 'loading' } | { state: 'ready' } | { state: 'error'; message: string; offline: boolean };
 
 /**
- * Any coordinate, analysed live by the backend (/api/point): clicked on the
- * Moon or typed as "lat, lon". Needs the Vesper server running.
+ * Any coordinate, clicked on the Moon or typed as "lat, lon". The live server
+ * (/api/point) analyses that exact point; when it cannot be reached, the
+ * nearest point of the precomputed global grid is shown instead, and labelled.
  */
 export function PointPanel() {
   const point = useApp((s) => s.customPoint);
@@ -25,12 +27,15 @@ export function PointPanel() {
   const scene = useScene();
   const [result, setResult] = useState<PointResult | null>(null);
   const [status, setStatus] = useState<Status>({ state: 'loading' });
+  /** Set when the answer is the nearest precomputed point: how far it is from the one asked for. */
+  const [nearestKm, setNearestKm] = useState<number | null>(null);
   const lat = point?.lat;
   const lon = point?.lon;
 
   // A new point starts clean; a new mission window keeps the last answer on screen while it refreshes
   useEffect(() => {
     setResult(null);
+    setNearestKm(null);
     setState({ customVerdict: null });
   }, [lat, lon]);
 
@@ -40,16 +45,30 @@ export function PointPanel() {
     setStatus({ state: 'loading' });
     // Sliders fire many changes: wait for them to settle before asking
     const timer = setTimeout(() => {
-      fetchPoint({ lat, lon, dateMs: plannedMs, days: m.days, delay: m.delay, preset: m.preset, maxSlope: m.maxSlope }, ctl.signal)
-        .then((r) => {
-          setResult(r);
-          setStatus({ state: 'ready' });
-          setState({ customVerdict: verdictOf(r) });
-        })
+      const query = { lat, lon, dateMs: plannedMs, days: m.days, delay: m.delay, preset: m.preset, maxSlope: m.maxSlope };
+      const show = (r: PointResult, km: number | null) => {
+        if (ctl.signal.aborted) return;
+        setResult(r);
+        setNearestKm(km);
+        setStatus({ state: 'ready' });
+        setState({ customVerdict: verdictOf(r) });
+      };
+      const fail = (e: unknown, offline: boolean) => {
+        if (ctl.signal.aborted) return;
+        setStatus({ state: 'error', message: e instanceof Error ? e.message : String(e), offline });
+      };
+      fetchPoint(query, ctl.signal)
+        .then((r) => show(r, null))
         .catch((e: unknown) => {
           if (ctl.signal.aborted) return;
-          // fetch rejects with a TypeError when the server cannot be reached
-          setStatus({ state: 'error', message: e instanceof Error ? e.message : String(e), offline: e instanceof TypeError });
+          // The server answered with an error of its own: show it
+          if (e instanceof BackendError) return fail(e, false);
+          // The server is not reachable: answer from the precomputed global grid
+          const ephem = getState().ephem;
+          if (!ephem) return fail(e, true);
+          analyseOffline(query, ephem)
+            .then((a) => show(a.result, a.distanceKm))
+            .catch((e2: unknown) => fail(e2, !(e2 instanceof BackendError)));
         });
     }, 200);
     return () => {
@@ -70,7 +89,7 @@ export function PointPanel() {
             Custom site
           </h2>
           <p className="site-coords tabular">{fmtLatLon(point.lat, point.lon, 3)}</p>
-          <p className="site-detail">Analysed live by the Vesper backend</p>
+          <p className="site-detail">{nearestKm === null ? 'Analysed live by the Vesper backend' : 'Nearest precomputed point'}</p>
         </div>
         <div className="site-head-actions">
           <button type="button" className="icon-btn" aria-label="Centre view on the custom site" title="Centre view" onClick={() => scene()?.flyTo(point.lat, point.lon, 1.6)}>
@@ -119,6 +138,15 @@ export function PointPanel() {
         </div>
       ) : (
         <div className="point-result" aria-busy={status.state === 'loading'} data-stale={status.state === 'loading'}>
+          {nearestKm !== null && (
+            <p className="nearest-note" role="note">
+              The live server is offline, so this is the nearest precomputed point: <b className="tabular">{fmtLatLon(result.lat, result.lon, 1)}</b>,{' '}
+              <b className="tabular">{Math.round(nearestKm)} km</b> from the one you picked.{' '}
+              {Math.abs(point.lat) >= 75
+                ? 'Near the poles, light and terrain change within a few kilometres: take this as a rough guide and use the recommended sites for detail.'
+                : 'Sunlight and Earth contact are similar over that distance; slope and local terrain can differ.'}
+            </p>
+          )}
           <div className={`verdict verdict-${verdict}`}>
             <span className="verdict-label">{VERDICT_LABEL[verdict]}</span>
             <span className="verdict-score tabular">score {Math.round(w.score)} / 100</span>

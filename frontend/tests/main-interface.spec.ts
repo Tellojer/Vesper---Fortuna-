@@ -164,14 +164,38 @@ test('custom coordinates are analysed by the backend', async ({ page }) => {
   await expect(panel).toBeHidden();
 });
 
-test('clicking the Moon analyses that point; an unreachable backend is explained', async ({ page }) => {
+test('clicking the Moon analyses that point; without the server the nearest precomputed point answers', async ({ page }) => {
   await page.route('**/api/point?*', (route) => route.abort());
   const canvas = page.locator('canvas.scene-canvas');
   const box = (await canvas.boundingBox())!;
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
   const panel = page.locator('.point-panel');
   await expect(panel.locator('.site-name')).toHaveText('Custom site');
-  await expect(panel.getByRole('alert')).toContainText('backend is not reachable');
+  // The answer comes from the global grid, and says so
+  await expect(panel.locator('.site-detail')).toHaveText('Nearest precomputed point');
+  await expect(panel.locator('.nearest-note')).toContainText(/\d+ km from the one you picked/);
+  await expect(panel.locator('.verdict-label')).toHaveText(/Suitable|Acceptable|Not recommended/);
+  await expect(panel.locator('.verdict-score')).toHaveText(/score \d+ \/ 100/);
+  // The centre of the nearside always sees the Earth
+  await expect(panel.locator('.stats-list div', { hasText: 'Earth visible' }).locator('dd')).toHaveText('100%');
+  await expect(page.locator('.marker[data-kind="custom"]')).toHaveAttribute('data-verdict', /suitable|acceptable|not-recommended/);
+
+  // The mission controls recompute it in the browser
+  const before = await panel.locator('.verdict-score').textContent();
+  // (with Earth always in view, weighting communication more raises the score)
+  await panel.locator('.slider input').nth(1).fill('0');
+  await expect(panel.locator('.slider-head output').nth(1)).toHaveText('Communication');
+  await expect(panel.locator('.verdict-score')).not.toHaveText(before!);
+});
+
+test('an error answered by the server itself is shown, not replaced', async ({ page }) => {
+  await page.route('**/api/point?*', (route) =>
+    route.fulfill({ status: 400, json: { error: 'Fecha fuera de los datos' }, headers: { 'access-control-allow-origin': '*' } }),
+  );
+  const search = page.getByRole('combobox');
+  await search.fill('10, 20');
+  await search.press('Enter');
+  await expect(page.locator('.point-panel').getByRole('alert')).toContainText('could not analyse this point');
 });
 
 test('voice assistant: asks for the region and takes you to the best site', async ({ page }) => {

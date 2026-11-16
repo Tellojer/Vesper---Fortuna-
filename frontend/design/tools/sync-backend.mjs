@@ -28,6 +28,7 @@ if (!(await exists(SRC))) throw new Error(`No pipeline data at ${SRC}. Run this 
 const keepSurvey = !(await exists(SURVEY));
 for (const f of await fs.readdir(OUT).catch(() => [])) {
   if (keepSurvey && f === 'survey') continue;
+  if (f.startsWith('global-grid.')) continue; // written by design/tools/global_grid.py
   await fs.rm(path.join(OUT, f), { recursive: true, force: true });
 }
 await fs.mkdir(OUT, { recursive: true });
